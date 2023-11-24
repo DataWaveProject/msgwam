@@ -267,9 +267,9 @@ MODULE mo_msgwam_config
                                         ! (convective source)
   INTEGER :: specid_offset_cv(max_dom)  ! offset in spectral ID to distinguish different sources
   INTEGER :: nrays_coll                 !
-  LOGICAL :: lcalc_cgw_tend   (max_dom)  ! whether or not output convective GW tendencies
+  LOGICAL :: lcalc_cgw_tend   (max_dom)  ! whether or not output convective GW tendencies 
                                          ! (decision based on the output namelist)
-  LOGICAL :: lcalc_flux_4dir_bg(max_dom) ! whether or not calculate 4 directional flux diagnostics
+  LOGICAL :: lcalc_flux_4dir_bg(max_dom) ! whether or not calculate 4 directional flux diagnostics 
                                          ! (background source, decision based on the output namelist)
   LOGICAL :: lcalc_flux_4dir_cv(max_dom) ! whether or not calculate 4 directional flux diagnostics
                                          ! (convective source, decision based on the output namelist)

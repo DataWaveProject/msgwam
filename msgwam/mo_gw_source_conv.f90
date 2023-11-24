@@ -1,5 +1,5 @@
 !>
-!! gw_source_conv: parameters and initialization for gravity wave source schemes
+!! gw_source_conv: parameters and initialization for gravity wave source schemes 
 !!                 in MS-GWaM
 !!
 !! <Describe the concepts of the procedures and algorithms used in the module.>
@@ -379,7 +379,7 @@ test(:,2,jb) = ll_dz(:,jb)
       cosphi(iphi,:,:) = COS(phi)
       sinphi(iphi,:,:) = SIN(phi)
     ENDDO
-
+ 
     p_msgwam(jg)% ctmfl_cgw(:,:,js*5+1:js*5+5) = 0.0_wp
 
     a_mwn(:,:,:) = -1.0_wp
@@ -398,12 +398,11 @@ test(:,2,jb) = ll_dz(:,jb)
     i_startblk = p_patch%cells%start_blk(rl_start,1       )
     i_endblk   = p_patch%cells%end_blk  (rl_end  ,i_nchdom)
 
-
     IF (js == 1) THEN
 
 !$OMP PARALLEL
 !$OMP DO PRIVATE(jb, jc, jk, i_startidx, i_endidx, entr, entrdz, n2_ct, n2_ct_limit,  &
-!$OMP            kctop0, kcbas0, kentrmax, kctop2, kcbas2, kct, kcb, kcm,             &
+!$OMP            kctop0, kcbas0, kentrmax, kctop2, kcbas2, kct, kcb, kcm,             &      
 !$OMP            tmp, tmps, sum05_entrdz)
 
     L_JB:  DO jb = i_startblk, i_endblk
@@ -519,7 +518,7 @@ test(:,2,jb) = ll_dz(:,jb)
         v_ct(jc,jb) = 0.5_wp*(v  (jc,kct-1,jb) + v  (jc,kct,jb))
         u_cb(jc,jb) = 0.5_wp*(u  (jc,kcb-1,jb) + u  (jc,kcb,jb))
         v_cb(jc,jb) = 0.5_wp*(v  (jc,kcb-1,jb) + v  (jc,kcb,jb))
-
+ 
         n2_ct = grav*LOG(    temp_ifc(jc,kct-1,jb)/temp_ifc(jc,kct+1,jb)                &
           &              *(  pres_ifc(jc,kct+1,jb)/pres_ifc(jc,kct-1,jb) )**rd_o_cpd )  &
           &         /(       z_ifc   (jc,kct-1,jb) - z_ifc (jc,kct+1,jb) )
@@ -595,7 +594,7 @@ test(:,2,jb) = ll_dz(:,jb)
             &           + v(jc,kll-1,jb)*(dz(jc,kll-1,jb) - p_msgwam(jg)% ll_dz_cgw(jc,jb)) )  &
             &          *rdz_ml*2._wp - cqy(jc,jb)
         END IF
-
+          
         IF ( cqx(jc,jb) /= u_ct(jc,jb) .or. cqy(jc,jb) /= v_ct(jc,jb) ) THEN
           phi0 = ATAN2( cqy(jc,jb) - v_ct(jc,jb), cqx(jc,jb) - u_ct(jc,jb) )
           DO iphi = 1, nphi05
@@ -621,8 +620,8 @@ test(:,2,jb) = ll_dz(:,jb)
 
     cosphi(nphi05+1:cfg%nphi(js),:,:) = -cosphi(1:nphi05,:,:)
     sinphi(nphi05+1:cfg%nphi(js),:,:) = -sinphi(1:nphi05,:,:)
-
-
+ 
+ 
     !:::::   LOOP ENDS   :::::
     CALL timer_stop(timer_gws_test1)
 
@@ -678,13 +677,14 @@ test(:,2,jb) = ll_dz(:,jb)
         END IF
       ENDDO
 
-      p_msgwam(jg)% ctmfl_cgw(jc,jb,js*5+5) = SUM( SUM(mfs_ct(:,:,jc,jb), dim=2)*dmdphi(:) )
+    p_msgwam(jg)% ctmfl_cgw(jc,jb,js*5+5) = SUM( SUM(mfs_ct(:,:,jc,jb), dim=2)*dmdphi(:) )
 
     ENDDO
     ENDDO
 
 !$OMP END DO
 !$OMP END PARALLEL
+
 
     IF (js == cfg% n_source(jg)) THEN
 
@@ -813,6 +813,7 @@ test(:,2,jb) = ll_dz(:,jb)
 
         ENDDO
 
+
       ENDDO
       ENDDO
 
@@ -869,6 +870,7 @@ test(:,2,jb) = ll_dz(:,jb)
 
         ENDDO
 
+
       ENDDO
       ENDDO
 
@@ -876,7 +878,6 @@ test(:,2,jb) = ll_dz(:,jb)
 !$OMP END PARALLEL
 
     END IF  ! lsteady
-
 
     IF (js == 1) THEN
 
@@ -944,7 +945,7 @@ test(:,2,jb) = ll_dz(:,jb)
 
     ! data arrays
     REAL(wp) ::  x_sq(nm,2), c_intr(nm,2), th_ftn(nm,2)
-    REAL(wp) ::  c_intr_twist, tmp_m(nm)
+    REAL(wp) ::  c_intr_twist, tmp_m(nm)  
     REAL(wp) ::  q0sqc(ncol,nblk), zcta(ncol,nblk), zcba(ncol,nblk)
 
     ! variables used to calculate |X|^2
@@ -1053,14 +1054,13 @@ test(:,2,jb) = ll_dz(:,jb)
           x_sq(im,1) = REAL( 4.0_dp*REAL(x3*(y1 - CONJG(x2*y1)))**2  &
             &                /( REAL(x3)**2 + (n2dn1*AIMAG(x3))**2 ), kind=wp )
         ENDDO
-
-!im = maxloc(x_sq(:,1),1)
-!if (x_sq(im,1) > 30. .and. nbv_ct(jc,jb) > 0.5e-2_wp) then
-!print*,"YH,X2 ",x_sq(im,1),c_intr(im,1)
-!print*,"YH, zd,zb",zd(jc,jb),zcba(jc,jb)
-!print*,"YH, nt,n2q",nbv_ct(jc,jb),n2_q(jc,jb)
-!print*,"YH, c_min",c_intr(nm,1)
-!end if
+! im = maxloc(x_sq(:,1),1)
+! if (x_sq(im,1) > 30. .and. nbv_ct(jc,jb) > 0.5e-2_wp) then
+! print*,"YH,X2 ",x_sq(im,1),c_intr(im,1)
+! print*,"YH, zd,zb",zd(jc,jb),zcba(jc,jb)
+! print*,"YH, nt,n2q",nbv_ct(jc,jb),n2_q(jc,jb)
+! print*,"YH, c_min",c_intr(nm,1)
+! end if
 
         ! Since (intrinsic) cqh = 0, spectra become symmetric.
 
@@ -1139,7 +1139,7 @@ test(:,2,jb) = ll_dz(:,jb)
             x2  = x2*coef2
             x2c = CONJG(x2)
             x3c = CONJG(x3)
-          ELSE
+          ELSE 
             coef3 = ctmp - c05p_aimu
             x2  = ((-zs_mzalph)*bfac)**c05p_aimu
             x3  = ((-zs_mzalph)*bfac)**c05m_aimu
@@ -1162,16 +1162,15 @@ test(:,2,jb) = ll_dz(:,jb)
 
         ENDDO  ! im
         ENDDO  ! iposneg
-
-!do iposneg = 1, 2
-!im = maxloc(x_sq(:,iposneg),1)
-!if (x_sq(im,iposneg) > 30. .and. nbv_ct(jc,jb) > 0.5e-2_wp) then
-!print*,"YH,sh,X2 ",x_sq(im,iposneg),c_intr(im,iposneg)
-!print*,"YH,sh zd,zb",zd(jc,jb),zcba(jc,jb)
-!print*,"YH,sh nt,n2q",nbv_ct(jc,jb),n2_q(jc,jb)
-!print*,"YH,sh c_min",c_intr(nm,iposneg)
-!end if
-!enddo
+! do iposneg = 1, 2
+! im = maxloc(x_sq(:,iposneg),1)
+! if (x_sq(im,iposneg) > 30. .and. nbv_ct(jc,jb) > 0.5e-2_wp) then
+! print*,"YH,sh,X2 ",x_sq(im,iposneg),c_intr(im,iposneg)
+! print*,"YH,sh zd,zb",zd(jc,jb),zcba(jc,jb)
+! print*,"YH,sh nt,n2q",nbv_ct(jc,jb),n2_q(jc,jb)
+! print*,"YH,sh c_min",c_intr(nm,iposneg)
+! end if
+! enddo
 
         cqh =   (cqx(jc,jb) - u_ct(jc,jb))*cosphi(iphi,jc,jb)  &
           &   + (cqy(jc,jb) - v_ct(jc,jb))*sinphi(iphi,jc,jb)

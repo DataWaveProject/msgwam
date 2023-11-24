@@ -21,7 +21,7 @@ MODULE mo_gw_source_nml
   USE mo_exception,           ONLY: finish, message, message_text
 
   USE mo_kind,                ONLY: wp
-  USE mo_impl_constants,      ONLY: max_dom, inwp, iaes
+  USE mo_impl_constants,      ONLY: max_dom, inwp
 
   USE mo_namelist,            ONLY: position_nml, positioned, open_nml, close_nml
   USE mo_master_control,      ONLY: use_restart_namelists

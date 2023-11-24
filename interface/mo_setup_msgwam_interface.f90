@@ -72,18 +72,18 @@ MODULE mo_setup_msgwam_interface
       iexist(:,:,:),      & ! existence / vertical level index of ray
                             ! iexist <= 0 --> ray does not exist
                             ! if iexist > 0 this integer is used for
-                            ! storing the jk index of the ray volume
+                            ! storing the jk index of the ray volume 
                             ! center point
       specid(:,:,:),      & ! spectral ID of ray in the launch spectrum
-      jk_active(:,:,:),   & ! jk index above which the ray volume after
-                            ! launch becomes active: prognostically moves
-                            ! in phase-space and contributes to the mom-flux
-                            ! calculation. This is always the same for
-                            ! the background source (jklaunch) but it changes
+      jk_active(:,:,:),   & ! jk index above which the ray volume after 
+                            ! launch becomes active: prognostically moves 
+                            ! in phase-space and contributes to the mom-flux 
+                            ! calculation. This is always the same for 
+                            ! the background source (jklaunch) but it changes 
                             ! every launch time for the convective source
                             ! where the launch height is based on the cloud top
       jr_last(:,:,:),     & ! last-launched ray index for a certain specid
-      jk_source(:,:),     & ! jk index of the launch level (for the background
+      jk_source(:,:),     & ! jk index of the launch level (for the background 
                             ! source same as jk_active)
       jk_full_rtop(:,:,:),& ! full level index closest to the top of the ray volume
       jk_full_rbot(:,:,:),& ! full level index closest to the bottom of the ray volume
@@ -373,12 +373,12 @@ MODULE mo_setup_msgwam_interface
   ! Declare grid info for rays
   TYPE(t_gridinfo4ray), ALLOCATABLE :: p_gridinfo4ray(:) ! (1:n_dom)
   TYPE(t_mgmgrid),      ALLOCATABLE :: p_mgmgrid(:)    ! (1:n_dom)
-  ! Declare launch flux
+  ! Declare launch flux 
   TYPE(t_lfluxbg),      ALLOCATABLE :: p_lfluxbg(:)
   TYPE(t_var_list_ptr), ALLOCATABLE :: p_lfluxbg_list(:)
   ! Other declarations
-  INTEGER                           :: jkmin_ini, jkmax_ini ! vertical level indices
-                                                            ! corresponding to
+  INTEGER                           :: jkmin_ini, jkmax_ini ! vertical level indices 
+                                                            ! corresponding to 
                                                             ! zrmin, zrmax
   INTEGER                           :: nlaunch_max_cv       ! no. of ray volumes
                                                             ! launched at a time
@@ -483,7 +483,7 @@ SUBROUTINE setup_msgwam_interface(n_dom,p_patch,defcase)
     IF (TRIM(defcase) == 'construct') THEN
       CALL setup_msgwam(n_dom,p_patch(1:))
     END IF
-
+      
     IF (TRIM(defcase) == 'destruct') THEN
       CALL cleanup_msgwam(n_dom)
     END IF
@@ -552,10 +552,10 @@ SUBROUTINE setup_msgwam(n_dom,p_patch)
     nlev    = p_patch(jg)%nlev
     WRITE(listname,'(a,i2.2)') 'p_msgwam_list_in_D',jg
     CALL new_field_list(jg, nlev, nblks_c, TRIM(listname), p_msgwam_list(jg), p_msgwam(jg))
-  ENDDO
+  ENDDO 
 
-  ! As this setup is always called we make sure that no
-  ! calculations are done if MS-GWaM will not be used on
+  ! As this setup is always called we make sure that no 
+  ! calculations are done if MS-GWaM will not be used on 
   ! any subdomains
   IF (ALL( .NOT. lmsgwam(:) ))  RETURN
 
@@ -615,7 +615,7 @@ SUBROUTINE setup_msgwam(n_dom,p_patch)
     coef_st(1) = 1._wp
   END IF
 
-  ! Define spectral elements for omega. Due to the hydrostatic assumption in
+  ! Define spectral elements for omega. Due to the hydrostatic assumption in 
   ! Scinocca (2003) one should keep omega such as bvf >> abs(omega) >> fc.
   ! Discretization: equidistant
   domega_work = (omegamax-omegamin)/REAL(omegadim,wp)
@@ -678,11 +678,11 @@ SUBROUTINE setup_msgwam(n_dom,p_patch)
     ENDDO
 
     ! Number of rays to be added if ltimeadd=.true.
-    IF (nh_test_name == 'gwp') THEN
+    IF (nh_test_name == 'gwp') THEN 
 
-      ! Check if zrmin and zrmax is within the vertical domain
+      ! Check if zrmin and zrmax is within the vertical domain 
       IF (zrmin < vct_a(nlev+p_patch(jg)%nshift_total) .OR. &
-          zrmax > vct_a(1+p_patch(jg)%nshift_total)) THEN
+          zrmax > vct_a(1+p_patch(jg)%nshift_total)) THEN 
         CALL finish('setup_msgwam', &
              'zrmin or zrmax lies out of the vertical domain!')
       ENDIF
@@ -723,7 +723,7 @@ SUBROUTINE setup_msgwam(n_dom,p_patch)
     specid_offset_cv(jg) = nrays_add_bg(jg)
 !   specid_offset_??(jg) = specid_offset_cv(jg)
 
-    ! Set maximum number of ray volumes per column. The key parameter is
+    ! Set maximum number of ray volumes per column. The key parameter is 
     ! limfactor / limfactor_conv to be set in the namelist.
     IF (.NOT. lsteady) THEN
       ! Transient case
@@ -740,7 +740,7 @@ SUBROUTINE setup_msgwam(n_dom,p_patch)
       nrays_cv  (jg) = nrays_add_cv(jg)
     ENDIF
     maxrays(jg) = maxrays_bg(jg) + maxrays_cv(jg)
-    ! Note: maxrays and maxrays_?? are not used any more (except in output
+    ! Note: maxrays and maxrays_?? are not used any more (except in output 
     ! messages.
     nrays  (jg) = nrays_bg  (jg) + nrays_cv  (jg)
 
@@ -1169,7 +1169,7 @@ SUBROUTINE setup_msgwam(n_dom,p_patch)
 
   ENDIF
 
-  ! Decide whether gw fluxes are put out for
+  ! Decide whether gw fluxes are put out for 
   ! all 4 directions (E, W, N, S) separately
   lcalc_cgw_tend   (:) = .FALSE.
   lcalc_flux_4dir_cv(:) = .FALSE.
@@ -1191,16 +1191,17 @@ SUBROUTINE setup_msgwam(n_dom,p_patch)
         &  is_variable_in_output(var_name='mfl_cgw_w')  .OR.  &
         &  is_variable_in_output(var_name='mfl_cgw_n')  .OR.  &
         &  is_variable_in_output(var_name='mfl_cgw_s')  .OR.  &
-        &  is_variable_in_output(var_name='wafl_cgw_u')  .OR.  &
-        &  is_variable_in_output(var_name='wafl_cgw_d')  .OR.  &
-        &  is_variable_in_output(var_name='wafl_cgw_e')  .OR.  &
-        &  is_variable_in_output(var_name='wafl_cgw_w')  .OR.  &
-        &  is_variable_in_output(var_name='wafl_cgw_n')  .OR.  &
-        &  is_variable_in_output(var_name='wafl_cgw_s')  .OR.  &
+        &  is_variable_in_output(var_name='wafl_cgw_u') .OR.  &
+        &  is_variable_in_output(var_name='wafl_cgw_d') .OR.  &
+        &  is_variable_in_output(var_name='wafl_cgw_e') .OR.  &
+        &  is_variable_in_output(var_name='wafl_cgw_w') .OR.  &
+        &  is_variable_in_output(var_name='wafl_cgw_n') .OR.  &
+        &  is_variable_in_output(var_name='wafl_cgw_s') .OR.  &
         &  is_variable_in_output(var_name='ptfl_cgw_e') .OR.  &
         &  is_variable_in_output(var_name='ptfl_cgw_w') .OR.  &
         &  is_variable_in_output(var_name='ptfl_cgw_n') .OR.  &
         &  is_variable_in_output(var_name='ptfl_cgw_s')
+ 
     END IF
 
     IF ( nrays_add_bg(jg) /= 0 ) THEN
@@ -1209,12 +1210,12 @@ SUBROUTINE setup_msgwam(n_dom,p_patch)
         &  is_variable_in_output(var_name='mfl_mgm_w')  .OR.  &
         &  is_variable_in_output(var_name='mfl_mgm_n')  .OR.  &
         &  is_variable_in_output(var_name='mfl_mgm_s')  .OR.  &
-        &  is_variable_in_output(var_name='wafl_mgm_u')  .OR.  &
-        &  is_variable_in_output(var_name='wafl_mgm_d')  .OR.  &
-        &  is_variable_in_output(var_name='wafl_mgm_e')  .OR.  &
-        &  is_variable_in_output(var_name='wafl_mgm_w')  .OR.  &
-        &  is_variable_in_output(var_name='wafl_mgm_n')  .OR.  &
-        &  is_variable_in_output(var_name='wafl_mgm_s')  .OR.  &
+        &  is_variable_in_output(var_name='wafl_mgm_u') .OR.  &
+        &  is_variable_in_output(var_name='wafl_mgm_d') .OR.  &
+        &  is_variable_in_output(var_name='wafl_mgm_e') .OR.  &
+        &  is_variable_in_output(var_name='wafl_mgm_w') .OR.  &
+        &  is_variable_in_output(var_name='wafl_mgm_n') .OR.  &
+        &  is_variable_in_output(var_name='wafl_mgm_s') .OR.  &
         &  is_variable_in_output(var_name='ptfl_mgm_e') .OR.  &
         &  is_variable_in_output(var_name='ptfl_mgm_w') .OR.  &
         &  is_variable_in_output(var_name='ptfl_mgm_n') .OR.  &
@@ -1249,7 +1250,7 @@ SUBROUTINE setup_msgwam(n_dom,p_patch)
       &       STAT=ist)
     IF (ist/=success) CALL finish ('setup_msgwam',&
         &          'MS-GWaM: allocation of gridinfo4ray elements failed')
-
+  
 !YHK+
     rl_start = grf_bdywidth_c + 1
     rl_end   = min_rlcell_int - 2
@@ -1528,31 +1529,31 @@ SUBROUTINE setup_msgwam(n_dom,p_patch)
       ! Open output file for horizontal propagation test
       OPEN(987,FILE=filename_ltest_hprop,STATUS='UNKNOWN',POSITION='APPEND')
     ENDIF
-
+  
     ! Are we on the Sphere or on the Torus?
     SELECT CASE(p_patch(jg)%geometry_info%geometry_type)
 
     CASE(sphere_geometry)
-    ! Sphere:
-    ! The function inside_triangle will need "global" cartesian
-    ! coordinates with the Earth's center as origin. Here we
-    ! trasnsform spherical coordinates to "global" cartesian
+    ! Sphere: 
+    ! The function inside_triangle will need "global" cartesian 
+    ! coordinates with the Earth's center as origin. Here we 
+    ! trasnsform spherical coordinates to "global" cartesian 
     ! coordinates.
 
 !!$OMP PARALLEL
 !!$OMP DO PRIVATE(jb, jc, jv, jec, jtri, i_startidx, i_endidx, istencil, vidx, vblk, cidx_v, cblk_v, cidx, cblk) ICON_OMP_GUIDED_SCHEDULE
       DO jb = i_startblk, i_endblk
-
+  
         CALL get_indices_c(p_patch(jg), jb, i_startblk, i_endblk, i_startidx, i_endidx, rl_start, rl_end)
-
+  
         DO jc = i_startidx, i_endidx
-
+  
           istencil = 0
-
+  
           ! Get line and block indices of cell vertices
           vidx(1:3) = p_patch(jg)%cells%vertex_idx(jc,jb,1:3)
           vblk(1:3) = p_patch(jg)%cells%vertex_blk(jc,jb,1:3)
-
+  
           ! Store longitudes and latitudes of cell vertices
           DO jv = 1,3
             p_gridinfo4ray(jg)%cellvertices_lon(jv,jc,jb) = p_patch(jg)%verts%vertex(vidx(jv),vblk(jv))%lon
@@ -1565,7 +1566,7 @@ SUBROUTINE setup_msgwam(n_dom,p_patch)
                                                          *SIN(p_gridinfo4ray(jg)%cellvertices_lon(jv,jc,jb))
             p_gridinfo4ray(jg)%cellvertices_z(jv,jc,jb) = SIN(p_gridinfo4ray(jg)%cellvertices_lat(jv,jc,jb))
           ENDDO
-
+  
           ! For each vertex: get all the cells which share this vertex
           DO jv = 1,3
             nbcells_v    = p_patch(jg)%verts%num_edges(vidx(jv),vblk(jv))
@@ -1574,44 +1575,44 @@ SUBROUTINE setup_msgwam(n_dom,p_patch)
             cidx_v(1:nbcells_v,jv) = p_patch(jg)%verts%cell_idx(vidx(jv),vblk(jv),1:nbcells_v)
             cblk_v(1:nbcells_v,jv) = p_patch(jg)%verts%cell_blk(vidx(jv),vblk(jv),1:nbcells_v)
           ENDDO
-
+  
           ! 1st add the 3 direct neighbors to the stencil
           DO jec = 1, 3
-
+  
             istencil = istencil + 1
-
+  
             ! Get line and block indices of direct neighbors
             cidx(jec) = p_patch(jg)%cells%neighbor_idx(jc,jb,jec)
             cblk(jec) = p_patch(jg)%cells%neighbor_blk(jc,jb,jec)
-
+  
             ! Store indices of direct neighbor cells
             p_gridinfo4ray(jg)%cellneighbors_idx(istencil,jc,jb) = cidx(jec)
             p_gridinfo4ray(jg)%cellneighbors_blk(istencil,jc,jb) = cblk(jec)
           ENDDO
-
+  
           ! 2nd loop over the vertices and add all the cells
-          ! that are no direct neighbors and not the actual cell
+          ! that are no direct neighbors and not the actual cell 
           ! we are sitting in
           DO jv = 1,3     ! loop over vertices
             DO jtri = 1,6   ! loop over cells around each vertex
-
+  
               IF (.NOT.( (cidx_v(jtri,jv) == cidx(1) .AND. cblk_v(jtri,jv) == cblk(1))  &
                 &  .OR.  (cidx_v(jtri,jv) == cidx(2) .AND. cblk_v(jtri,jv) == cblk(2))  &
                 &  .OR.  (cidx_v(jtri,jv) == cidx(3) .AND. cblk_v(jtri,jv) == cblk(3))  &
                 &  .OR.  (cidx_v(jtri,jv) == jc      .AND. cblk_v(jtri,jv) == jb) &
-                &  .OR.  (cidx_v(jtri,jv) == 0       .AND. cblk_v(jtri,jv) == 0 ) &
+                &  .OR.  (cidx_v(jtri,jv) == 0       .AND. cblk_v(jtri,jv) == 0 ) & 
                 &  .OR.  (cidx_v(jtri,jv) == -9999   .AND. cblk_v(jtri,jv) == -9999 )) ) THEN
-
+  
                 istencil = istencil + 1
-
+  
                 ! Store indices of non-direct neighbor cells
                 p_gridinfo4ray(jg)%cellneighbors_idx(istencil,jc,jb) = cidx_v(jtri,jv)
                 p_gridinfo4ray(jg)%cellneighbors_blk(istencil,jc,jb) = cblk_v(jtri,jv)
               ENDIF
-
+  
             ENDDO  !jtri
           ENDDO  !jv
-
+  
           ! Store number of neighboring cells (either 12 or 11)
           p_gridinfo4ray(jg)%cellneighbors_nstencil(jc,jb) = istencil
 
@@ -1623,7 +1624,7 @@ SUBROUTINE setup_msgwam(n_dom,p_patch)
       !IF (ltest_hprop .AND. l1ray) THEN
       IF (ltest_hprop) THEN
 
-        ! Store lat, lon coordinates of halo
+        ! Store lat, lon coordinates of halo 
         ! cells for diagnostic purpose only
 
         ! Halo cells
@@ -1655,15 +1656,15 @@ SUBROUTINE setup_msgwam(n_dom,p_patch)
 !!$OMP END DO
 !!$OMP END PARALLEL
 
-        ! Diagnose if we managed to get a comprehensive stencil:
-        ! print out lat, lon coordinates of all cells and those
+        ! Diagnose if we managed to get a comprehensive stencil: 
+        ! print out lat, lon coordinates of all cells and those 
         ! of their neighbors
 
         ! Wait until all PEs reach this point
-        CALL p_barrier(p_comm_work) ! Not sure it is really necessary
+        CALL p_barrier(p_comm_work) ! Not sure it is really necessary 
                                     ! but this is a rarely used diagnostic
-                                    ! anyway, so no worries if this slows
-                                    ! anything down
+                                    ! anyway, so no worries if this slows 
+                                    ! anything down 
 
         ! Prognostic domain
         rl_start = grf_bdywidth_c + 1
@@ -1672,9 +1673,9 @@ SUBROUTINE setup_msgwam(n_dom,p_patch)
         i_endblk   = p_patch(jg)%cells%end_block(rl_end)
 
         DO jb = i_startblk, i_endblk
-
+  
           CALL get_indices_c(p_patch(jg), jb, i_startblk, i_endblk, i_startidx, i_endidx, rl_start, rl_end)
-
+  
           DO jc = i_startidx, i_endidx
 
             WRITE(987,'(a,3i4,2x,6F14.5)') &
@@ -1714,24 +1715,24 @@ SUBROUTINE setup_msgwam(n_dom,p_patch)
 
     CASE(planar_torus_geometry)
     ! Torus:
-    ! The function inside_triangle_torus will need
-    ! horizontal cartesian coordinates of the tangential
+    ! The function inside_triangle_torus will need 
+    ! horizontal cartesian coordinates of the tangential 
     ! plane
 
 !!$OMP PARALLEL
 !!$OMP DO PRIVATE(jb, jc, jv, jec, jtri, i_startidx, i_endidx, istencil, vidx, vblk, cidx_v, cblk_v, cidx, cblk) ICON_OMP_GUIDED_SCHEDULE
       DO jb = i_startblk, i_endblk
-
+  
         CALL get_indices_c(p_patch(jg), jb, i_startblk, i_endblk, i_startidx, i_endidx, rl_start, rl_end)
-
+  
         DO jc = i_startidx, i_endidx
-
+  
           istencil = 0
-
+  
           ! Get line and block indices of cell vertices
           vidx(1:3) = p_patch(jg)%cells%vertex_idx(jc,jb,1:3)
           vblk(1:3) = p_patch(jg)%cells%vertex_blk(jc,jb,1:3)
-
+  
           ! Store longitudes and latitudes of cell vertices
           DO jv = 1,3
             p_gridinfo4ray(jg)%cellvertices_lon(jv,jc,jb) = p_patch(jg)%verts%vertex(vidx(jv),vblk(jv))%lon
@@ -1742,7 +1743,7 @@ SUBROUTINE setup_msgwam(n_dom,p_patch)
             p_gridinfo4ray(jg)%cellvertices_y(jv,jc,jb) = p_patch(jg)%verts%cartesian(vidx(jv),vblk(jv))%x(2)
             p_gridinfo4ray(jg)%cellvertices_z(jv,jc,jb) = p_patch(jg)%verts%cartesian(vidx(jv),vblk(jv))%x(3)
           ENDDO
-
+  
           ! For each vertex: get all the cells which share this vertex
           DO jv = 1,3
             nbcells_v    = p_patch(jg)%verts%num_edges(vidx(jv),vblk(jv))
@@ -1751,44 +1752,44 @@ SUBROUTINE setup_msgwam(n_dom,p_patch)
             cidx_v(1:nbcells_v,jv) = p_patch(jg)%verts%cell_idx(vidx(jv),vblk(jv),1:nbcells_v)
             cblk_v(1:nbcells_v,jv) = p_patch(jg)%verts%cell_blk(vidx(jv),vblk(jv),1:nbcells_v)
           ENDDO
-
+  
           ! 1st add the 3 direct neighbors to the stencil
           DO jec = 1, 3
-
+  
             istencil = istencil + 1
-
+  
             ! Get line and block indices of direct neighbors
             cidx(jec) = p_patch(jg)%cells%neighbor_idx(jc,jb,jec)
             cblk(jec) = p_patch(jg)%cells%neighbor_blk(jc,jb,jec)
-
+  
             ! Store indices of direct neighbor cells
             p_gridinfo4ray(jg)%cellneighbors_idx(istencil,jc,jb) = cidx(jec)
             p_gridinfo4ray(jg)%cellneighbors_blk(istencil,jc,jb) = cblk(jec)
           ENDDO
-
+  
           ! 2nd loop over the vertices and add all the cells
-          ! that are no direct neighbors and not the actual cell
+          ! that are no direct neighbors and not the actual cell 
           ! we are sitting in
           DO jv = 1,3     ! loop over vertices
             DO jtri = 1,6   ! loop over cells around each vertex
-
+  
               IF (.NOT.( (cidx_v(jtri,jv) == cidx(1) .AND. cblk_v(jtri,jv) == cblk(1))  &
                 &  .OR.  (cidx_v(jtri,jv) == cidx(2) .AND. cblk_v(jtri,jv) == cblk(2))  &
                 &  .OR.  (cidx_v(jtri,jv) == cidx(3) .AND. cblk_v(jtri,jv) == cblk(3))  &
                 &  .OR.  (cidx_v(jtri,jv) == jc      .AND. cblk_v(jtri,jv) == jb) &
-                &  .OR.  (cidx_v(jtri,jv) == 0       .AND. cblk_v(jtri,jv) == 0 ) &
+                &  .OR.  (cidx_v(jtri,jv) == 0       .AND. cblk_v(jtri,jv) == 0 ) & 
                 &  .OR.  (cidx_v(jtri,jv) == -9999   .AND. cblk_v(jtri,jv) == -9999 )) ) THEN
-
+  
                 istencil = istencil + 1
-
+  
                 ! Store indices of non-direct neighbor cells
                 p_gridinfo4ray(jg)%cellneighbors_idx(istencil,jc,jb) = cidx_v(jtri,jv)
                 p_gridinfo4ray(jg)%cellneighbors_blk(istencil,jc,jb) = cblk_v(jtri,jv)
               ENDIF
-
+  
             ENDDO  !jtri
           ENDDO  !jv
-
+  
           ! Store number of neighboring cells (either 12 or 11)
           p_gridinfo4ray(jg)%cellneighbors_nstencil(jc,jb) = istencil
 
@@ -1800,7 +1801,7 @@ SUBROUTINE setup_msgwam(n_dom,p_patch)
       !IF (ltest_hprop .AND. l1ray) THEN
       IF (ltest_hprop) THEN
 
-        ! Store x,y coordinates of halo
+        ! Store x,y coordinates of halo 
         ! cells for diagnostic purpose only
 
         ! Halo cells
@@ -1832,15 +1833,15 @@ SUBROUTINE setup_msgwam(n_dom,p_patch)
 !!$OMP END DO
 !!$OMP END PARALLEL
 
-        ! Diagnose if we managed to get a comprehensive stencil:
-        ! print out x, y coordinates of all cells and those
+        ! Diagnose if we managed to get a comprehensive stencil: 
+        ! print out x, y coordinates of all cells and those 
         ! of their neighbors
 
         ! Wait until all PEs reach this point
-        CALL p_barrier(p_comm_work) ! Not sure it is really necessary
+        CALL p_barrier(p_comm_work) ! Not sure it is really necessary 
                                     ! but this is a rarely used diagnostic
-                                    ! anyway, so no worries if this slows
-                                    ! anything down
+                                    ! anyway, so no worries if this slows 
+                                    ! anything down 
 
         ! Prognostic domain
         rl_start = grf_bdywidth_c + 1
@@ -1849,9 +1850,9 @@ SUBROUTINE setup_msgwam(n_dom,p_patch)
         i_endblk   = p_patch(jg)%cells%end_block(rl_end)
 
         DO jb = i_startblk, i_endblk
-
+  
           CALL get_indices_c(p_patch(jg), jb, i_startblk, i_endblk, i_startidx, i_endidx, rl_start, rl_end)
-
+  
           DO jc = i_startidx, i_endidx
 
             WRITE(987,'(a,3i4,2x,6F14.5)') &
@@ -1916,9 +1917,9 @@ SUBROUTINE setup_msgwam(n_dom,p_patch)
       domymax = p_patch(jg)%geometry_info%center%x(2) &
               + p_patch(jg)%geometry_info%domain_height*0.5_wp &
               - height_triangle
-      ! The domain is not completely symmetric to the "center"
-      ! the domain stored in geometry_info%center%x. The "rule"
-      ! above to get the min, max values of vertex x,y coordinates
+      ! The domain is not completely symmetric to the "center" 
+      ! the domain stored in geometry_info%center%x. The "rule" 
+      ! above to get the min, max values of vertex x,y coordinates 
       ! is somewhat empirical.
 
     CASE DEFAULT
@@ -2061,7 +2062,7 @@ SUBROUTINE new_ray_list( k_jg, nray_nspec, nspec, kblks, listname, p_list, p_var
   CALL add_var( p_list, name_head//'%lon', p_var%lon, &
               & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
   !           & ldims=shape3d_ray, in_group=groups("ray_prog_vars"),     &
-              & ldims=shape3d_ray, &
+              & ldims=shape3d_ray, & 
               & lcontainer=.TRUE., lrestart=.FALSE., loutput=.FALSE.)
 
   ! &      lat(nproma,nray_nspec,nblks)
@@ -2070,7 +2071,7 @@ SUBROUTINE new_ray_list( k_jg, nray_nspec, nspec, kblks, listname, p_list, p_var
   CALL add_var( p_list, name_head//'%lat', p_var%lat, &
               & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
   !           & ldims=shape3d_ray, in_group=groups("ray_prog_vars"),     &
-              & ldims=shape3d_ray, &
+              & ldims=shape3d_ray, & 
               & lcontainer=.TRUE., lrestart=.FALSE., loutput=.FALSE.)
 
   ! &      z(nproma,nray_nspec,nblks)
@@ -2079,7 +2080,7 @@ SUBROUTINE new_ray_list( k_jg, nray_nspec, nspec, kblks, listname, p_list, p_var
   CALL add_var( p_list, name_head//'%z', p_var%z, &
               & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
   !           & ldims=shape3d_ray, in_group=groups("ray_prog_vars"),     &
-              & ldims=shape3d_ray, &
+              & ldims=shape3d_ray, & 
               & lcontainer=.TRUE., lrestart=.FALSE., loutput=.FALSE.)
 
   ! &      dlon(nproma,nray_nspec,nblks)
@@ -2088,7 +2089,7 @@ SUBROUTINE new_ray_list( k_jg, nray_nspec, nspec, kblks, listname, p_list, p_var
   CALL add_var( p_list, name_head//'%dlon', p_var%dlon, &
               & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
   !           & ldims=shape3d_ray, in_group=groups("ray_prog_vars"),     &
-              & ldims=shape3d_ray, &
+              & ldims=shape3d_ray, & 
               & lcontainer=.TRUE., lrestart=.FALSE., loutput=.FALSE.)
 
   ! &      dlat(nproma,nray_nspec,nblks)
@@ -2097,7 +2098,7 @@ SUBROUTINE new_ray_list( k_jg, nray_nspec, nspec, kblks, listname, p_list, p_var
   CALL add_var( p_list, name_head//'%dlat', p_var%dlat, &
               & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
   !           & ldims=shape3d_ray, in_group=groups("ray_prog_vars"),     &
-              & ldims=shape3d_ray, &
+              & ldims=shape3d_ray, & 
               & lcontainer=.TRUE., lrestart=.FALSE., loutput=.FALSE.)
 
   ! &      dz(nproma,nray_nspec,nblks)
@@ -2106,7 +2107,7 @@ SUBROUTINE new_ray_list( k_jg, nray_nspec, nspec, kblks, listname, p_list, p_var
   CALL add_var( p_list, name_head//'%dz', p_var%dz, &
               & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
   !           & ldims=shape3d_ray, in_group=groups("ray_prog_vars"),     &
-              & ldims=shape3d_ray, &
+              & ldims=shape3d_ray, & 
               & lcontainer=.TRUE., lrestart=.FALSE., loutput=.FALSE.)
 
   ! &      coslat(nproma,nray_nspec,nblks)
@@ -2124,7 +2125,7 @@ SUBROUTINE new_ray_list( k_jg, nray_nspec, nspec, kblks, listname, p_list, p_var
   CALL add_var( p_list, name_head//'%k', p_var%k, &
               & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
   !           & ldims=shape3d_ray, in_group=groups("ray_prog_vars"),     &
-              & ldims=shape3d_ray, &
+              & ldims=shape3d_ray, & 
               & lcontainer=.TRUE., lrestart=.FALSE., loutput=.FALSE.)
 
   ! &      l(nproma,nray_nspec,nblks)
@@ -2133,7 +2134,7 @@ SUBROUTINE new_ray_list( k_jg, nray_nspec, nspec, kblks, listname, p_list, p_var
   CALL add_var( p_list, name_head//'%l', p_var%l, &
               & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
   !           & ldims=shape3d_ray, in_group=groups("ray_prog_vars"),     &
-              & ldims=shape3d_ray, &
+              & ldims=shape3d_ray, & 
               & lcontainer=.TRUE., lrestart=.FALSE., loutput=.FALSE.)
 
   ! &      m(nproma,nray_nspec,nblks)
@@ -2142,7 +2143,7 @@ SUBROUTINE new_ray_list( k_jg, nray_nspec, nspec, kblks, listname, p_list, p_var
   CALL add_var( p_list, name_head//'%m', p_var%m, &
               & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
   !           & ldims=shape3d_ray, in_group=groups("ray_prog_vars"),     &
-              & ldims=shape3d_ray, &
+              & ldims=shape3d_ray, & 
               & lcontainer=.TRUE., lrestart=.FALSE., loutput=.FALSE.)
 
   ! &      dk(nproma,nray_nspec,nblks)
@@ -2151,7 +2152,7 @@ SUBROUTINE new_ray_list( k_jg, nray_nspec, nspec, kblks, listname, p_list, p_var
   CALL add_var( p_list, name_head//'%dk', p_var%dk, &
               & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
   !           & ldims=shape3d_ray, in_group=groups("ray_prog_vars"),     &
-              & ldims=shape3d_ray, &
+              & ldims=shape3d_ray, & 
               & lcontainer=.TRUE., lrestart=.FALSE., loutput=.FALSE.)
 
   ! &      dl(nproma,nray_nspec,nblks)
@@ -2160,7 +2161,7 @@ SUBROUTINE new_ray_list( k_jg, nray_nspec, nspec, kblks, listname, p_list, p_var
   CALL add_var( p_list, name_head//'%dl', p_var%dl, &
               & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
   !           & ldims=shape3d_ray, in_group=groups("ray_prog_vars"),     &
-              & ldims=shape3d_ray, &
+              & ldims=shape3d_ray, & 
               & lcontainer=.TRUE., lrestart=.FALSE., loutput=.FALSE.)
 
   ! &      dm(nproma,nray_nspec,nblks)
@@ -2169,7 +2170,7 @@ SUBROUTINE new_ray_list( k_jg, nray_nspec, nspec, kblks, listname, p_list, p_var
   CALL add_var( p_list, name_head//'%dm', p_var%dm, &
               & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
   !           & ldims=shape3d_ray, in_group=groups("ray_prog_vars"),     &
-              & ldims=shape3d_ray, &
+              & ldims=shape3d_ray, & 
               & lcontainer=.TRUE., lrestart=.FALSE., loutput=.FALSE.)
 
   ! &      wadens(nproma,nray_nspec,nblks)
@@ -2178,7 +2179,7 @@ SUBROUTINE new_ray_list( k_jg, nray_nspec, nspec, kblks, listname, p_list, p_var
   CALL add_var( p_list, name_head//'%wadens', p_var%wadens, &
               & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
   !           & ldims=shape3d_ray, in_group=groups("ray_prog_vars"),     &
-              & ldims=shape3d_ray, &
+              & ldims=shape3d_ray, & 
               & lcontainer=.TRUE., lrestart=.FALSE., loutput=.FALSE.)
 
   IF ( name_head == 'ray' .OR. name_head == 'rwork' .OR. name_head == 'spec' ) THEN
@@ -2188,7 +2189,7 @@ SUBROUTINE new_ray_list( k_jg, nray_nspec, nspec, kblks, listname, p_list, p_var
     CALL add_var( p_list, name_head//'%iexist', p_var%iexist, &
                 & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
     !           & ldims=shape3d_ray, in_group=groups("ray_prog_vars"),     &
-                & ldims=shape3d_ray, &
+                & ldims=shape3d_ray, & 
                 & lcontainer=.TRUE., lrestart=.FALSE., loutput=.FALSE.)
   ENDIF
 
@@ -2200,7 +2201,7 @@ SUBROUTINE new_ray_list( k_jg, nray_nspec, nspec, kblks, listname, p_list, p_var
     CALL add_var( p_list, name_head//'%specid', p_var%specid, &
                 & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
     !           & ldims=shape3d_ray, in_group=groups("ray_prog_vars"),     &
-                & ldims=shape3d_ray, &
+                & ldims=shape3d_ray, & 
                 & lcontainer=.TRUE., lrestart=.FALSE., loutput=.FALSE.)
 
     ! &      jk_active(nproma,nray_nspec,nblks)
@@ -2209,7 +2210,7 @@ SUBROUTINE new_ray_list( k_jg, nray_nspec, nspec, kblks, listname, p_list, p_var
     CALL add_var( p_list, name_head//'%jk_active', p_var%jk_active, &
                 & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
     !           & ldims=shape3d_ray, in_group=groups("ray_prog_vars"),     &
-                & ldims=shape3d_ray, &
+                & ldims=shape3d_ray, & 
                 & lcontainer=.TRUE., lrestart=.FALSE., loutput=.FALSE.)
 
   END IF
@@ -2222,16 +2223,16 @@ SUBROUTINE new_ray_list( k_jg, nray_nspec, nspec, kblks, listname, p_list, p_var
     CALL add_var( p_list, name_head//'%jr_last', p_var%jr_last, &
                 & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
     !           & ldims=shape3d_spec, in_group=groups("ray_prog_vars"),     &
-                & ldims=shape3d_spec, &
+                & ldims=shape3d_spec, & 
                 & lcontainer=.TRUE., lrestart=.FALSE., loutput=.FALSE.)
 
-    ! &      jk_full_rtop(nproma,nray_nspec,nblks)
+        ! &      jk_full_rtop(nproma,nray_nspec,nblks)
     cf_desc    = t_cf_var(name_head//'%jk_full_rtop', 'N/A', 'full lev index of ray-volume top', datatype_flt)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var( p_list, name_head//'%jk_full_rtop', p_var%jk_full_rtop, &
                 & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
     !           & ldims=shape3d_ray, in_group=groups("ray_prog_vars"),     &
-                & ldims=shape3d_ray, &
+                & ldims=shape3d_ray, & 
                 & lcontainer=.TRUE., lrestart=.FALSE., loutput=.FALSE.)
 
     ! &      jk_full_rbot(nproma,nray_nspec,nblks)
@@ -2240,7 +2241,7 @@ SUBROUTINE new_ray_list( k_jg, nray_nspec, nspec, kblks, listname, p_list, p_var
     CALL add_var( p_list, name_head//'%jk_full_rbot', p_var%jk_full_rbot, &
                 & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
     !           & ldims=shape3d_ray, in_group=groups("ray_prog_vars"),     &
-                & ldims=shape3d_ray, &
+                & ldims=shape3d_ray, & 
                 & lcontainer=.TRUE., lrestart=.FALSE., loutput=.FALSE.)
 
     ! &      jk_half_rtop(nproma,nray_nspec,nblks)
@@ -2249,7 +2250,7 @@ SUBROUTINE new_ray_list( k_jg, nray_nspec, nspec, kblks, listname, p_list, p_var
     CALL add_var( p_list, name_head//'%jk_half_rtop', p_var%jk_half_rtop, &
                 & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
     !           & ldims=shape3d_ray, in_group=groups("ray_prog_vars"),     &
-                & ldims=shape3d_ray, &
+                & ldims=shape3d_ray, & 
                 & lcontainer=.TRUE., lrestart=.FALSE., loutput=.FALSE.)
 
     ! &      jk_half_rbot(nproma,nray_nspec,nblks)
@@ -2258,7 +2259,7 @@ SUBROUTINE new_ray_list( k_jg, nray_nspec, nspec, kblks, listname, p_list, p_var
     CALL add_var( p_list, name_head//'%jk_half_rbot', p_var%jk_half_rbot, &
                 & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
     !           & ldims=shape3d_ray, in_group=groups("ray_prog_vars"),     &
-                & ldims=shape3d_ray, &
+                & ldims=shape3d_ray, & 
                 & lcontainer=.TRUE., lrestart=.FALSE., loutput=.FALSE.)
 
   END IF
@@ -2271,7 +2272,7 @@ SUBROUTINE new_ray_list( k_jg, nray_nspec, nspec, kblks, listname, p_list, p_var
     CALL add_var( p_list, name_head//'%jk_source', p_var%jk_source, &
                 & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
     !           & ldims=shape2d_grid, in_group=groups("ray_prog_vars"),     &
-                & ldims=shape2d_grid, &
+                & ldims=shape2d_grid, & 
                 & lcontainer=.FALSE., lrestart=.FALSE., loutput=.FALSE.)
 
   END IF
@@ -2476,21 +2477,21 @@ SUBROUTINE new_field_list( k_jg, klev, kblks, listname, p_list, p_var )
   cf_desc    = t_cf_var('amfl_mgm', 'Pa', 'absolute momentum fluxes', datatype_flt)
   grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
   CALL add_var( p_list, 'amfl_mgm'  , p_var%amfl_mgm,           &
-    & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE     , cf_desc, grib2_desc,     &
+    & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc,     &
     & ldims=shape3d, lrestart=.FALSE., loutput=.TRUE.)
 
   !           uufl_mgm(nproma,nlev,nblks_c)
   cf_desc    = t_cf_var('uufl_mgm', 'Pa', 'uu momentum fluxes', datatype_flt)
   grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
   CALL add_var( p_list, 'uufl_mgm', p_var%uufl_mgm,             &
-    & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE     , cf_desc, grib2_desc,     &
+    & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc,     &
     & ldims=shape3d, lrestart=.FALSE., loutput=.TRUE.)
 
   !           uvfl_mgm(nproma,nlev,nblks_c)
   cf_desc    = t_cf_var('uvfl_mgm', 'Pa', 'uv momentum fluxes', datatype_flt)
   grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
   CALL add_var( p_list, 'uvfl_mgm', p_var%uvfl_mgm,             &
-    & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE     , cf_desc, grib2_desc,     &
+    & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc,     &
     & ldims=shape3d, lrestart=.FALSE., loutput=.TRUE.)
 
   !           uwfl_mgm(nproma,nlevp1,nblks_c)
@@ -2504,14 +2505,14 @@ SUBROUTINE new_field_list( k_jg, klev, kblks, listname, p_list, p_var )
   cf_desc    = t_cf_var('vufl_mgm', 'Pa', 'vu momentum fluxes', datatype_flt)
   grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
   CALL add_var( p_list, 'vufl_mgm', p_var%vufl_mgm,             &
-    & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE     , cf_desc, grib2_desc,     &
+    & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc,     &
     & ldims=shape3d, lrestart=.FALSE., loutput=.TRUE.)
 
   !           vvfl_mgm(nproma,nlev,nblks_c)
   cf_desc    = t_cf_var('vvfl_mgm', 'Pa', 'vv momentum fluxes', datatype_flt)
   grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
   CALL add_var( p_list, 'vvfl_mgm', p_var%vvfl_mgm,             &
-    & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE     , cf_desc, grib2_desc,     &
+    & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc,     &
     & ldims=shape3d, lrestart=.FALSE., loutput=.TRUE.)
 
   !           vwfl_mgm(nproma,nlevp1,nblks_c)
@@ -2526,28 +2527,28 @@ SUBROUTINE new_field_list( k_jg, klev, kblks, listname, p_list, p_var )
   cf_desc    = t_cf_var('mfl_mgm_E', 'Pa', 'eastward momentum fluxes', datatype_flt)
   grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
   CALL add_var( p_list, 'mfl_mgm_e', p_var%mfl_mgm_e,           &
-    & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE     , cf_desc, grib2_desc,     &
+    & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc,     &
     & ldims=shape3d, lrestart=.FALSE., loutput=.TRUE.)
 
   !           mfl_mgm_w(nproma,nlev,nblks_c)
   cf_desc    = t_cf_var('mfl_mgm_W', 'Pa', 'westward momentum fluxes', datatype_flt)
   grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
   CALL add_var( p_list, 'mfl_mgm_w', p_var%mfl_mgm_w,           &
-    & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE     , cf_desc, grib2_desc,     &
+    & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc,     &
     & ldims=shape3d, lrestart=.FALSE., loutput=.TRUE.)
 
   !           mfl_mgm_n(nproma,nlev,nblks_c)
   cf_desc    = t_cf_var('mfl_mgm_N', 'Pa', 'northward momentum fluxes', datatype_flt)
   grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
   CALL add_var( p_list, 'mfl_mgm_n', p_var%mfl_mgm_n,           &
-    & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE     , cf_desc, grib2_desc,     &
+    & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc,     &
     & ldims=shape3d, lrestart=.FALSE., loutput=.TRUE.)
 
   !           mfl_mgm_s(nproma,nlev,nblks_c)
   cf_desc    = t_cf_var('mfl_mgm_S', 'Pa', 'southward momentum fluxes', datatype_flt)
   grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
   CALL add_var( p_list, 'mfl_mgm_s', p_var%mfl_mgm_s,           &
-    & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE     , cf_desc, grib2_desc,     &
+    & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc,     &
     & ldims=shape3d, lrestart=.FALSE., loutput=.TRUE.)
 
   ! wave action fluxes (directional)
@@ -2555,42 +2556,42 @@ SUBROUTINE new_field_list( k_jg, klev, kblks, listname, p_list, p_var )
   cf_desc    = t_cf_var('wafl_mgm_U', 'Pa m', 'upward wave action fluxes', datatype_flt)
   grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
   CALL add_var( p_list, 'wafl_mgm_u', p_var%wafl_mgm_u,           &
-        & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE_HALF, cf_desc, grib2_desc,     &
+        & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc,     &
         & ldims=shape3d, lrestart=.FALSE., loutput=.TRUE.)
 
   ! wafl_mgm_d(nproma,nlev,nblks_c)
-  cf_desc    = t_cf_var('wafl_mgm_D', 'Pa m', 'dowmward wave action fluxes', datatype_flt)
+  cf_desc    = t_cf_var('wafl_mgm_D', 'Pa m', 'downward wave action fluxes', datatype_flt)
   grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
   CALL add_var( p_list, 'wafl_mgm_d', p_var%wafl_mgm_d,           &
-        & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE_HALF, cf_desc, grib2_desc,     &
+        & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc,     &
         & ldims=shape3d, lrestart=.FALSE., loutput=.TRUE.)
 
   ! wafl_mgm_e(nproma,nlev,nblks_c)
   cf_desc    = t_cf_var('wafl_mgm_E', 'Pa m', 'eastward wave action fluxes', datatype_flt)
   grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
   CALL add_var( p_list, 'wafl_mgm_e', p_var%wafl_mgm_e,           &
-        & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE_HALF, cf_desc, grib2_desc,     &
+        & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc,     &
         & ldims=shape3d, lrestart=.FALSE., loutput=.TRUE.)
 
   ! wafl_mgm_w(nproma,nlev,nblks_c)
   cf_desc    = t_cf_var('wafl_mgm_W', 'Pa m', 'westward wave action fluxes', datatype_flt)
   grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
   CALL add_var( p_list, 'wafl_mgm_w', p_var%wafl_mgm_w,           &
-        & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE_HALF, cf_desc, grib2_desc,     &
+        & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc,     &
         & ldims=shape3d, lrestart=.FALSE., loutput=.TRUE.)
 
   ! wafl_mgm_n(nproma,nlev,nblks_c)
   cf_desc    = t_cf_var('wafl_mgm_N', 'Pa m', 'northward wave action fluxes', datatype_flt)
   grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
   CALL add_var( p_list, 'wafl_mgm_n', p_var%wafl_mgm_n,           &
-        & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE_HALF, cf_desc, grib2_desc,     &
+        & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc,     &
         & ldims=shape3d, lrestart=.FALSE., loutput=.TRUE.)
 
   ! wafl_mgm_s(nproma,nlev,nblks_c)
   cf_desc    = t_cf_var('wafl_mgm_S', 'Pa m', 'southward wave action fluxes', datatype_flt)
   grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
   CALL add_var( p_list, 'wafl_mgm_s', p_var%wafl_mgm_s,           &
-        & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE_HALF, cf_desc, grib2_desc,     &
+        & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc,     &
         & ldims=shape3d, lrestart=.FALSE., loutput=.TRUE.)
 
   ! Potential temperature fluxes
@@ -2598,21 +2599,21 @@ SUBROUTINE new_field_list( k_jg, klev, kblks, listname, p_list, p_var )
   cf_desc    = t_cf_var('aptfl_mgm', 'Pa K s/m', 'absolute pot temp fluxes', datatype_flt)
   grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
   CALL add_var( p_list, 'aptfl_mgm'  , p_var%aptfl_mgm,         &
-    & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE     , cf_desc, grib2_desc,     &
+    & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc,     &
     & ldims=shape3d, lrestart=.FALSE., loutput=.TRUE.)
 
   !           utfl_mgm(nproma,nlev,nblks_c)
   cf_desc    = t_cf_var('utfl_mgm', 'Pa K s/m', 'zonal pot temp fluxes', datatype_flt)
   grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
   CALL add_var( p_list, 'utfl_mgm', p_var%utfl_mgm,             &
-    & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE     , cf_desc, grib2_desc,     &
+    & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc,     &
     & ldims=shape3d, lrestart=.FALSE., loutput=.TRUE.)
 
   !           vtfl_mgm(nproma,nlev,nblks_c)
   cf_desc    = t_cf_var('vtfl_mgm', 'Pa K s/m', 'meridional pot temp fluxes', datatype_flt)
   grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
   CALL add_var( p_list, 'vtfl_mgm', p_var%vtfl_mgm,             &
-    & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE     , cf_desc, grib2_desc,     &
+    & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc,     &
     & ldims=shape3d, lrestart=.FALSE., loutput=.TRUE.)
 
   ! Potential temperature fluxes (directional)
@@ -2620,28 +2621,28 @@ SUBROUTINE new_field_list( k_jg, klev, kblks, listname, p_list, p_var )
   cf_desc    = t_cf_var('ptfl_mgm_E', 'Pa K s/m', 'eastward pot temp fluxes', datatype_flt)
   grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
   CALL add_var( p_list, 'ptfl_mgm_e', p_var%ptfl_mgm_e,         &
-    & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE     , cf_desc, grib2_desc,     &
+    & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc,     &
     & ldims=shape3d, lrestart=.FALSE., loutput=.TRUE.)
 
   !           ptfl_mgm_w(nproma,nlev,nblks_c)
   cf_desc    = t_cf_var('ptfl_mgm_W', 'Pa K s/m', 'westward pot temp fluxes', datatype_flt)
   grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
   CALL add_var( p_list, 'ptfl_mgm_w', p_var%ptfl_mgm_w,         &
-    & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE     , cf_desc, grib2_desc,     &
+    & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc,     &
     & ldims=shape3d, lrestart=.FALSE., loutput=.TRUE.)
 
   !           ptfl_mgm_n(nproma,nlev,nblks_c)
   cf_desc    = t_cf_var('ptfl_mgm_N', 'Pa K s/m', 'northward pot temp fluxes', datatype_flt)
   grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
   CALL add_var( p_list, 'ptfl_mgm_n', p_var%ptfl_mgm_n,         &
-    & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE     , cf_desc, grib2_desc,     &
+    & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc,     &
     & ldims=shape3d, lrestart=.FALSE., loutput=.TRUE.)
 
   !           ptfl_mgm_s(nproma,nlev,nblks_c)
   cf_desc    = t_cf_var('ptfl_mgm_S', 'Pa K s/m', 'southward pot temp fluxes', datatype_flt)
   grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
   CALL add_var( p_list, 'ptfl_mgm_s', p_var%ptfl_mgm_s,         &
-    & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE     , cf_desc, grib2_desc,     &
+    & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc,     &
     & ldims=shape3d, lrestart=.FALSE., loutput=.TRUE.)
 
   ! Energy
@@ -2649,7 +2650,7 @@ SUBROUTINE new_field_list( k_jg, klev, kblks, listname, p_list, p_var )
   cf_desc    = t_cf_var('energy_mgm', 'kg/m/s**2', 'gw energy', datatype_flt)
   grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
   CALL add_var( p_list, 'energy_mgm', p_var%energy_mgm,         &
-    & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE     , cf_desc, grib2_desc,     &
+    & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc,     &
     & ldims=shape3d, lrestart=.FALSE., loutput=.TRUE.)
 
   ! Potential energy
@@ -2657,7 +2658,7 @@ SUBROUTINE new_field_list( k_jg, klev, kblks, listname, p_list, p_var )
   cf_desc    = t_cf_var('energy_p_mgm', 'kg/m/s**2', 'gw potential energy', datatype_flt)
   grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
   CALL add_var( p_list, 'energy_p_mgm', p_var%energy_p_mgm,     &
-    & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE     , cf_desc, grib2_desc,     &
+    & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc,     &
     & ldims=shape3d, lrestart=.FALSE., loutput=.TRUE.)
 
   ! Potential energy
@@ -2665,7 +2666,7 @@ SUBROUTINE new_field_list( k_jg, klev, kblks, listname, p_list, p_var )
   cf_desc    = t_cf_var('action_mgm', 'kg/m/s', 'gw action', datatype_flt)
   grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
   CALL add_var( p_list, 'action_mgm', p_var%action_mgm,     &
-    & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE     , cf_desc, grib2_desc,     &
+    & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc,     &
     & ldims=shape3d, lrestart=.FALSE., loutput=.TRUE.)
 
 !!!!! TEST !!!!! TO BE CLEANED LATER
@@ -2674,26 +2675,26 @@ SUBROUTINE new_field_list( k_jg, klev, kblks, listname, p_list, p_var )
   cf_desc    = t_cf_var('mfcxz_mgm', 'ms-1', 'mfcxz', datatype_flt)
   grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
   CALL add_var( p_list, 'mfcxz_mgm', p_var%mfcxz_mgm,           &
-    & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE     , cf_desc, grib2_desc,     &
+    & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc,     &
     & ldims=shape3d, lrestart=.FALSE., loutput=.TRUE.)
   !           mfcyz_mgm(nproma,nlev,nblks_c)
   cf_desc    = t_cf_var('mfcyz_mgm', 'ms-1', 'mfcyz', datatype_flt)
   grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
   CALL add_var( p_list, 'mfcyz_mgm', p_var%mfcyz_mgm,           &
-    & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE     , cf_desc, grib2_desc,     &
+    & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc,     &
     & ldims=shape3d, lrestart=.FALSE., loutput=.TRUE.)
   ! elastic terms
   !           etx_mgm(nproma,nlev,nblks_c)
   cf_desc    = t_cf_var('etx_mgm', 'ms-1', 'etx', datatype_flt)
   grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
   CALL add_var( p_list, 'etx_mgm', p_var%etx_mgm,               &
-    & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE     , cf_desc, grib2_desc,     &
+    & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc,     &
     & ldims=shape3d, lrestart=.FALSE., loutput=.TRUE.)
   !           ety_mgm(nproma,nlev,nblks_c)
   cf_desc    = t_cf_var('ety_mgm', 'ms-1', 'ety', datatype_flt)
   grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
   CALL add_var( p_list, 'ety_mgm', p_var%ety_mgm,               &
-    & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE     , cf_desc, grib2_desc,     &
+    & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc,     &
     & ldims=shape3d, lrestart=.FALSE., loutput=.TRUE.)
 !!!!! TEST !!!!! TO BE CLEANED LATER
 
@@ -2787,7 +2788,7 @@ SUBROUTINE new_field_list( k_jg, klev, kblks, listname, p_list, p_var )
   grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
   CALL add_var( p_list, 'flag_cgw', p_var%flag_cgw,                        &
     &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc,   &
-    &           ldims=shape2d, lrestart=.TRUE., loutput=.TRUE., initval=-1)
+    &           ldims=shape2d, lrestart=.TRUE., loutput=.TRUE., initval=-1) 
 
   IF ( gws_conv_config%n_source(k_jg) > 0 ) THEN
 
@@ -2847,133 +2848,133 @@ SUBROUTINE new_field_list( k_jg, klev, kblks, listname, p_list, p_var )
     cf_desc    = t_cf_var('amfl_cgw', 'Pa', 'cgw absolute momentum fluxes' , datatype_flt)
     grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var( p_list, 'amfl_cgw', p_var%amfl_cgw,                             &
-      &           GRID_UNSTRUCTURED_CELL, ZA_REFERENCE     , cf_desc, grib2_desc, &
+      &           GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc, &
       &           ldims=shape3d, lrestart=.FALSE., loutput=.TRUE. )
 
     !       mfl_cgw_e(nproma,nlev,nblks_c)
     cf_desc    = t_cf_var('cgw_mfl_E', 'Pa', 'cgw eastward momentum fluxes' , datatype_flt)
     grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var( p_list, 'mfl_cgw_e', p_var%mfl_cgw_e,                           &
-      &           GRID_UNSTRUCTURED_CELL, ZA_REFERENCE     , cf_desc, grib2_desc, &
+      &           GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc, &
       &           ldims=shape3d, lrestart=.FALSE., loutput=.TRUE. )
 
     !       mfl_cgw_w(nproma,nlev,nblks_c)
     cf_desc    = t_cf_var('cgw_mfl_W', 'Pa', 'cgw westward momentum fluxes' , datatype_flt)
     grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var( p_list, 'mfl_cgw_w', p_var%mfl_cgw_w,                           &
-      &           GRID_UNSTRUCTURED_CELL, ZA_REFERENCE     , cf_desc, grib2_desc, &
+      &           GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc, &
       &           ldims=shape3d, lrestart=.FALSE., loutput=.TRUE. )
 
     !       mfl_cgw_n(nproma,nlev,nblks_c)
     cf_desc    = t_cf_var('cgw_mfl_N', 'Pa', 'cgw northward momentum fluxes', datatype_flt)
     grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var( p_list, 'mfl_cgw_n', p_var%mfl_cgw_n,                           &
-      &           GRID_UNSTRUCTURED_CELL, ZA_REFERENCE     , cf_desc, grib2_desc, &
+      &           GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc, &
       &           ldims=shape3d, lrestart=.FALSE., loutput=.TRUE. )
 
     !       mfl_cgw_s(nproma,nlev,nblks_c)
     cf_desc    = t_cf_var('cgw_mfl_S', 'Pa', 'cgw southward momentum fluxes', datatype_flt)
     grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var( p_list, 'mfl_cgw_s', p_var%mfl_cgw_s,                           &
-      &           GRID_UNSTRUCTURED_CELL, ZA_REFERENCE     , cf_desc, grib2_desc, &
+      &           GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc, &
       &           ldims=shape3d, lrestart=.FALSE., loutput=.TRUE. )
 
     ! wafl_cgw_u(nproma,nlev,nblks_c)
     cf_desc    = t_cf_var('wafl_cgw_U', 'Pa m', 'upward wave action fluxes', datatype_flt)
     grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var( p_list, 'wafl_cgw_u', p_var%wafl_cgw_u,           &
-          & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE_HALF, cf_desc, grib2_desc,     &
+          & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc,     &
           & ldims=shape3d, lrestart=.FALSE., loutput=.TRUE.)
 
     ! wafl_cgw_d(nproma,nlev,nblks_c)
-    cf_desc    = t_cf_var('wafl_cgw_D', 'Pa m', 'dowmward wave action fluxes', datatype_flt)
+    cf_desc    = t_cf_var('wafl_cgw_D', 'Pa m', 'downward wave action fluxes', datatype_flt)
     grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var( p_list, 'wafl_cgw_d', p_var%wafl_cgw_d,           &
-          & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE_HALF, cf_desc, grib2_desc,     &
+          & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc,     &
           & ldims=shape3d, lrestart=.FALSE., loutput=.TRUE.)
 
     ! wafl_cgw_e(nproma,nlev,nblks_c)
     cf_desc    = t_cf_var('wafl_cgw_E', 'Pa m', 'eastward wave action fluxes', datatype_flt)
     grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var( p_list, 'wafl_cgw_e', p_var%wafl_cgw_e,           &
-          & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE_HALF, cf_desc, grib2_desc,     &
+          & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc,     &
           & ldims=shape3d, lrestart=.FALSE., loutput=.TRUE.)
 
     ! wafl_cgw_w(nproma,nlev,nblks_c)
     cf_desc    = t_cf_var('wafl_cgw_W', 'Pa m', 'westward wave action fluxes', datatype_flt)
     grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var( p_list, 'wafl_cgw_w', p_var%wafl_cgw_w,           &
-          & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE_HALF, cf_desc, grib2_desc,     &
+          & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc,     &
           & ldims=shape3d, lrestart=.FALSE., loutput=.TRUE.)
 
     ! wafl_cgw_n(nproma,nlev,nblks_c)
     cf_desc    = t_cf_var('wafl_cgw_N', 'Pa m', 'northward wave action fluxes', datatype_flt)
     grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var( p_list, 'wafl_cgw_n', p_var%wafl_cgw_n,           &
-          & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE_HALF, cf_desc, grib2_desc,     &
+          & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc,     &
           & ldims=shape3d, lrestart=.FALSE., loutput=.TRUE.)
 
     ! wafl_cgw_s(nproma,nlev,nblks_c)
     cf_desc    = t_cf_var('wafl_cgw_S', 'Pa m', 'southward wave action fluxes', datatype_flt)
     grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var( p_list, 'wafl_cgw_s', p_var%wafl_cgw_s,           &
-          & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE_HALF, cf_desc, grib2_desc,     &
+          & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc,     &
           & ldims=shape3d, lrestart=.FALSE., loutput=.TRUE.)
 
     !       aptfl_cgw(nproma,nlev,nblks_c)
     cf_desc    = t_cf_var('aptfl_cgw', 'Pa K s/m', 'cgw absolute pot temp fluxes' , datatype_flt)
     grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var( p_list, 'aptfl_cgw', p_var%aptfl_cgw,                           &
-      &           GRID_UNSTRUCTURED_CELL, ZA_REFERENCE     , cf_desc, grib2_desc, &
+      &           GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc, &
       &           ldims=shape3d, lrestart=.FALSE., loutput=.TRUE. )
 
     !       ptfl_cgw_e(nproma,nlev,nblks_c)
     cf_desc    = t_cf_var('cgw_ptfl_E', 'Pa K s/m', 'cgw eastward pot temp fluxes' , datatype_flt)
     grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var( p_list, 'ptfl_cgw_e', p_var%ptfl_cgw_e,                         &
-      &           GRID_UNSTRUCTURED_CELL, ZA_REFERENCE     , cf_desc, grib2_desc, &
+      &           GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc, &
       &           ldims=shape3d, lrestart=.FALSE., loutput=.TRUE. )
 
     !       ptfl_cgw_w(nproma,nlev,nblks_c)
     cf_desc    = t_cf_var('cgw_ptfl_W', 'Pa K s/m', 'cgw westward pot temp fluxes' , datatype_flt)
     grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var( p_list, 'ptfl_cgw_w', p_var%ptfl_cgw_w,                         &
-      &           GRID_UNSTRUCTURED_CELL, ZA_REFERENCE     , cf_desc, grib2_desc, &
+      &           GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc, &
       &           ldims=shape3d, lrestart=.FALSE., loutput=.TRUE. )
 
     !       ptfl_cgw_n(nproma,nlev,nblks_c)
     cf_desc    = t_cf_var('cgw_ptfl_N', 'Pa K s/m', 'cgw northward pot temp fluxes', datatype_flt)
     grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var( p_list, 'ptfl_cgw_n', p_var%ptfl_cgw_n,                         &
-      &           GRID_UNSTRUCTURED_CELL, ZA_REFERENCE     , cf_desc, grib2_desc, &
+      &           GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc, &
       &           ldims=shape3d, lrestart=.FALSE., loutput=.TRUE. )
 
     !       ptfl_cgw_s(nproma,nlev,nblks_c)
     cf_desc    = t_cf_var('cgw_ptfl_S', 'Pa K s/m', 'cgw southward pot temp fluxes', datatype_flt)
     grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var( p_list, 'ptfl_cgw_s', p_var%ptfl_cgw_s,                         &
-      &           GRID_UNSTRUCTURED_CELL, ZA_REFERENCE     , cf_desc, grib2_desc, &
+      &           GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc, &
       &           ldims=shape3d, lrestart=.FALSE., loutput=.TRUE. )
 
     !       energy_cgw(nproma,nlev,nblks_c)
     cf_desc    = t_cf_var('energy_cgw', 'Pa', 'cgw energy', datatype_flt)
     grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var( p_list, 'energy_cgw', p_var%energy_cgw,                         &
-      &           GRID_UNSTRUCTURED_CELL, ZA_REFERENCE     , cf_desc, grib2_desc, &
+      &           GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc, &
       &           ldims=shape3d, lrestart=.FALSE., loutput=.TRUE. )
 
     !       energy_p_cgw(nproma,nlev,nblks_c)
     cf_desc    = t_cf_var('energy_p_cgw', 'Pa', 'cgw potential energy', datatype_flt)
     grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var( p_list, 'energy_p_cgw', p_var%energy_p_cgw,                     &
-      &           GRID_UNSTRUCTURED_CELL, ZA_REFERENCE     , cf_desc, grib2_desc, &
+      &           GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc, &
       &           ldims=shape3d, lrestart=.FALSE., loutput=.TRUE. )
 
     !       action_cgw(nproma,nlev,nblks_c)
     cf_desc    = t_cf_var('action_cgw', 'kg/m/s', 'cgw action', datatype_flt)
     grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var( p_list, 'action_cgw', p_var%action_cgw,                         &
-      &           GRID_UNSTRUCTURED_CELL, ZA_REFERENCE     , cf_desc, grib2_desc, &
+      &           GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc, &
       &           ldims=shape3d, lrestart=.FALSE., loutput=.TRUE. )
 
     !       ll_k_cgw (nproma,nblks_c)
@@ -2989,7 +2990,7 @@ SUBROUTINE new_field_list( k_jg, klev, kblks, listname, p_list, p_var )
     CALL add_var( p_list, 'ml_k_cgw' , p_var%ml_k_cgw,                      &
       &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc,  &
       &           ldims=shape2d, lrestart=.FALSE., loutput=.FALSE. )
-
+  
     !       ll_dz_cgw(nproma,nblks_c)
     cf_desc    = t_cf_var('ll_dz_cgw', '', 'cgw ll dz'         , datatype_flt)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
@@ -3221,7 +3222,7 @@ SUBROUTINE msgwam_write_restartfiles( mtime_current, p_patch )
 
   ncstart(1) = 1   ;   nccount(1) = nrays(jg)
   ncimap(2) = 1
-
+ 
   DO jb = i_startblk, i_endblk
 !   IF (nidx(jb) == 0)  CYCLE
     CALL get_indices_c( p_patch, jb, i_startblk, i_endblk,  &
@@ -3369,7 +3370,7 @@ SUBROUTINE read_restartfile_specified( ncid, ncvarid, jcol_1st, p_patch,  &
     CALL nf( nf_inq_varid(ncid, 'wadens'   , ncvarid(iv_wad )) )
 
       ! (The variable 'area' is not saved but will be newly calculated.)
-
+  
     CALL nf( nf_inq_varid(ncid, 'iexist'   , ncvarid(iv_iex)) )
     CALL nf( nf_inq_varid(ncid, 'specid'   , ncvarid(iv_sid)) )
     CALL nf( nf_inq_varid(ncid, 'jk_active', ncvarid(iv_kac)) )

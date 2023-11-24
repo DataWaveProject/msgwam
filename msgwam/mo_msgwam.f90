@@ -1,7 +1,7 @@
 !>
-!! This module is a collection of subroutines running the MS-GWaM
+!! This module is a collection of subroutines running the MS-GWaM 
 !! (Multi Scale Gravity Wave Model) developed at the Goethe Uni.
-!! MS-GWaM is a Lagrangian WKB raytracer in phase space based on
+!! MS-GWaM is a Lagrangian WKB raytracer in phase space based on 
 !! the literature below:
 !! Achatz et al. (2010), JFM.      -- theory
 !! Achatz et al. (2017), QJRMS.    -- theory
@@ -9,7 +9,7 @@
 !! Bölöni et al. (2016), JAS.      -- wave breaking
 !! Orr et al. (2010), J. Climate   -- background source (Desaubies type)
 !! Bölöni et al. (2021), JAS.      -- implementation in ICON
-!! Kim et al. (2021),  JAS         -- implementation in ICON
+!! Kim et al. (2021),  JAS         -- implementation in ICON 
 !!                                    (convective source, intermittency)
 !!
 !! @author Gergely Bölöni, Goethe Uni Frankfurt
@@ -18,7 +18,7 @@
 !! Initial version by Gergely Bölöni, Goethe Uni Frankfurt (2016-01-28)
 !! updates (listed below) by Young-Ha Kim, Goethe Uni Frankfurt (2019-01-21)
 !! -- significant speedup by re-coding
-!! -- updated lower boundary condition (launching ray volumes as source)
+!! -- updated lower boundary condition (launching ray volumes as source) 
 !! -- energy based removal of ray volumes
 !! -- revised ray volume propagation
 !! -- convective sources implemented (Song and Chun, 2005; Kim et al., 2021)
@@ -182,7 +182,7 @@ SUBROUTINE gwdrag_msgwam ( dt_call,                   & ! input
   REAL(wp)                                   :: prec(nproma)                                  ! total precip
 ! REAL(wp),                      PARAMETER   :: lim_tend = 0.05_wp
   REAL(wp),                      PARAMETER   :: lim_tend_tmp = 1._wp
-  !
+  ! 
   LOGICAL                                    :: ltimeadd_bg
   LOGICAL                                    :: ltimeadd_cv
   INTEGER                                    :: iter_sm
@@ -271,8 +271,8 @@ SUBROUTINE gwdrag_msgwam ( dt_call,                   & ! input
                    dz            = p_metrics%ddqz_z_full(:, :, :),  & ! full layer thickness                (in)
                    dzhalf        = p_metrics%ddqz_z_half(:, :, :),  & ! half layer thickness                (in)
                    wgtfac_c      = p_metrics%wgtfac_c(:, :, :),     & !                                     (in)
-                   rho           = rho (:, :, :),                   & ! density at full levels              (in)
-                   temp          = temp(:, :, :),                   & ! temperature at full levels          (in)
+                   rho           = rho (:, :, :),                   & ! density at full levels              (in)   
+                   temp          = temp(:, :, :),                   & ! temperature at full levels          (in)   
                    u             = u(:, :, :),                      & ! zonal wind (full levels)            (in)
                    v             = v(:, :, :),                      & ! meridional wind (full levels)       (in)
                    fc2           = fc2 (:, :),                      & ! f_c**2                              (out)
@@ -300,12 +300,12 @@ SUBROUTINE gwdrag_msgwam ( dt_call,                   & ! input
 
   IF (timers_level > 4) CALL timer_stop(timer_msgwam_fieldsgrads)
 
-
 !$OMP PARALLEL
 !$OMP DO PRIVATE(jb, jk, jc, i_startidx, i_endidx, prec,                      &
 !$OMP            uuflux_cgw, uvflux_cgw, uwflux_cgw, vvflux_cgw, vwflux_cgw,  &
 !$OMP            utflux_cgw, vtflux_cgw,                                      &
 !$OMP            kd, kd2, ld, ld2, md, md2, cgz_diag, A, A_save, B2, B2_save, mB2, mB2_save)
+
 
   DO jb = i_startblk, i_endblk
 
@@ -325,10 +325,10 @@ SUBROUTINE gwdrag_msgwam ( dt_call,                   & ! input
 !   ENDDO
 
     !======================== MERGE/REMOVE RAYS ==========================
-    ! Remove ray volumes if there are more than allowed (maxrays_bg(jg)
+    ! Remove ray volumes if there are more than allowed (maxrays_bg(jg) 
     ! or maxrays_cv(jg)) in order to keep computational costs under control.
-    ! The removal is done separately for ray volumes coming from the
-    ! background and the convective sources.
+    ! The removal is done separately for ray volumes coming from the 
+    ! background and the convective sources. 
     ! TODO: the removal should be replaced by a merging procedure
     !=====================================================================
 
@@ -495,10 +495,10 @@ SUBROUTINE gwdrag_msgwam ( dt_call,                   & ! input
 
 
     !============================ SATURATION ==============================
-    ! Wave breaking scheme based on static instability criterion: if the GW
+    ! Wave breaking scheme based on static instability criterion: if the GW 
     ! turns the potential temperture gradient to negative at a certain
-    ! height, the wave action of ray volumes are reduced so that static
-    ! stability sets in again. Saturation is (should be!) calculated for
+    ! height, the wave action of ray volumes are reduced so that static 
+    ! stability sets in again. Saturation is (should be!) calculated for 
     ! GWs from all sources (background, convective) together
     !======================================================================
 
@@ -557,9 +557,9 @@ SUBROUTINE gwdrag_msgwam ( dt_call,                   & ! input
 
 
     !============================ WAVE2GRID ===============================
-    ! Project quantities of the Lagrangian ray volumes to the Eulerian grid
-    ! and calculate pseudo-momentum fluxes, wave energy, etc..
-    ! The projection is done separately for GWs from the background and
+    ! Project quantities of the Lagrangian ray volumes to the Eulerian grid 
+    ! and calculate pseudo-momentum fluxes, wave energy, etc.. 
+    ! The projection is done separately for GWs from the background and 
     ! from the convective sources
     ! TODO: -- replace pseudo-momentum fluxes by real momentum fluxes
     !       -- projection in horizontal if horizontal propagation
@@ -735,8 +735,8 @@ SUBROUTINE gwdrag_msgwam ( dt_call,                   & ! input
 
 
     !============================== DATOUT ================================
-    ! Output profile of subgrid-scale GW quantities for specific lat,lon
-    ! coordinates. Mostly used for idealized tests but can be useful for
+    ! Output profile of subgrid-scale GW quantities for specific lat,lon 
+    ! coordinates. Mostly used for idealized tests but can be useful for 
     ! visualizing how ray volumes travel in vertical, etc.
     !======================================================================
 
@@ -835,8 +835,8 @@ SUBROUTINE gwdrag_msgwam ( dt_call,                   & ! input
 
 
     !======================== PROPAGATE GW FIELD ==========================
-    ! Ray equations are solved in 6D (x-k space) in order to calculate the
-    ! propagation and deformation of ray volumes in phase-space.
+    ! Ray equations are solved in 6D (x-k space) in order to calculate the 
+    ! propagation and deformation of ray volumes in phase-space. 
     !======================================================================
 
     IF (timers_level > 4) CALL timer_start(timer_msgwam_propagate_wave)
@@ -902,7 +902,7 @@ SUBROUTINE gwdrag_msgwam ( dt_call,                   & ! input
 
   !================ AVERAGE GW FIELD IN HORIZONTAL ======================
   ! ...
-  ! TODO:
+  ! TODO: 
   !======================================================================
 
 #ifndef __msgwam1d
@@ -1010,9 +1010,9 @@ SUBROUTINE gwdrag_msgwam ( dt_call,                   & ! input
 
   !============================= TENDENCY ===============================
   ! Calculate horizontal wind tendencies based on the vertical divergence
-  ! of pseudo-momentum fluxes. The total tendency and the tendency due to
+  ! of pseudo-momentum fluxes. The total tendency and the tendency due to 
   ! convective GWs is calculated separately (the latter for diagnostics).
-  ! TODO: calculate the 3D divergence of momentum fluxes in case of
+  ! TODO: calculate the 3D divergence of momentum fluxes in case of  
   !       horizontal propagation
   !======================================================================
 
@@ -1025,7 +1025,7 @@ SUBROUTINE gwdrag_msgwam ( dt_call,                   & ! input
 
   !====================== SYNCHRONIZE GW FIELD ==========================
   ! ...
-  ! TODO:
+  ! TODO: 
   !======================================================================
 
 #ifndef __msgwam1d
@@ -1037,7 +1037,7 @@ SUBROUTINE gwdrag_msgwam ( dt_call,                   & ! input
 
   !========================== SPLIT GW FIELD ============================
   ! ...
-  ! TODO:
+  ! TODO: 
   !======================================================================
 
   IF ( imethod_split > 0 .OR. imethod_merge > 0 ) THEN
@@ -1090,7 +1090,7 @@ SUBROUTINE gwdrag_msgwam ( dt_call,                   & ! input
 
   !======================== RE-GRID GW FIELD ============================
   ! ...
-  ! TODO:
+  ! TODO: 
   !======================================================================
 
 #ifndef __msgwam1d
@@ -1105,16 +1105,16 @@ SUBROUTINE gwdrag_msgwam ( dt_call,                   & ! input
 #endif
 
   !======================== TENDENCY LIMITER ============================
-  ! Tendency limiter to stabilize high-top runs. This limiter is taken
-  ! from mo_nwp_gw_interface.f90. Normally we would not like to use it as
-  ! MS-GWaM fluxes with a direct wave-meanflow interaction (+ wave
-  ! breaking) should not be out of realistic range. We still keep the
+  ! Tendency limiter to stabilize high-top runs. This limiter is taken 
+  ! from mo_nwp_gw_interface.f90. Normally we would not like to use it as 
+  ! MS-GWaM fluxes with a direct wave-meanflow interaction (+ wave 
+  ! breaking) should not be out of realistic range. We still keep the 
   ! option...
   !======================================================================
 
   ! hard-coded tendency checker :  to be removed later
   CALL test_blowup_uvt(p_patch, p_fld%ddt_u_gwd_mgm, p_fld%ddt_v_gwd_mgm, p_fld%ddt_t_gwd_mgm,  &
-    &                  lim_tend_tmp, lim_tend_tmp*0.1_wp)
+    &                  lim_tend_tmp, lim_tend_tmp*0.1_wp, '(checkpoint 1)')
 
   IF (llimittend) THEN
 
@@ -1125,8 +1125,8 @@ SUBROUTINE gwdrag_msgwam ( dt_call,                   & ! input
       !CALL get_indices_c(p_patch, jb, i_startblk, i_endblk, &
       !  & i_startidx, i_endidx, rl_start, rl_end)
       !
-      ! This limiter is taken from mo_nwp_gw_interface.f90. Normally we would not like to use it
-      ! as MS-GWaM fluxes with a direct wave-meanflow interaction (+ wave breaking) should not be out
+      ! This limiter is taken from mo_nwp_gw_interface.f90. Normally we would not like to use it 
+      ! as MS-GWaM fluxes with a direct wave-meanflow interaction (+ wave breaking) should not be out 
       ! of realistic range. We still keep the option...
       !DO jk = 1, nlev
       !  DO jc = i_startidx, i_endidx
@@ -1151,18 +1151,18 @@ SUBROUTINE gwdrag_msgwam ( dt_call,                   & ! input
 
   !======================== TENDENCY DIAGNOSTIC ============================
   ! Print out maximum of absolute of tendencies
-  ! TODO: one would need a syncronization and an mpi_allreduce operation
-  !       here in order to get full domain diagnostics. This is here only a
-  !       preliminary printout to have a first feeling how often the
+  ! TODO: one would need a syncronization and an mpi_allreduce operation 
+  !       here in order to get full domain diagnostics. This is here only a 
+  !       preliminary printout to have a first feeling how often the 
   !       tendencies are limited via llimittend = .true.
   !=========================================================================
   IF (msg_level >= 12) THEN
     maxindexu = MAXLOC(ABS(p_fld%ddt_u_gwd_mgm))
     maxindexv = MAXLOC(ABS(p_fld%ddt_v_gwd_mgm))
-    WRITE(message_text,'(a,E12.4,a,i4)') 'MAXABS of GW u-tendencies:', &
+    WRITE(message_text,'(a,E12.4,a,i4)') 'MAXABS of GW u-tendencies:', & 
       &  MAXVAL(ABS(p_fld% ddt_u_gwd_mgm)), ' at level:', maxindexu(2)
     CALL message('', TRIM(message_text))
-    WRITE(message_text,'(a,E12.4,a,i4)') 'MAXABS of GW v-tendencies:', &
+    WRITE(message_text,'(a,E12.4,a,i4)') 'MAXABS of GW v-tendencies:', & 
       &  MAXVAL(ABS(p_fld% ddt_v_gwd_mgm)), ' at level:', maxindexv(2)
     CALL message('', TRIM(message_text))
   ENDIF
@@ -1287,9 +1287,9 @@ SUBROUTINE fieldsgrads( p_patch, p_int_state, rl_start, rl_end, nlev, z, zhalf, 
     DO jk = 2, nlev
       DO jc = i_startidx, i_endidx
         wgtfac_c_jkm1 = 1._wp - wgtfac_c(jc, jk, jb)
-        rho_half (jc, jk, jb) = wgtfac_c(jc, jk, jb) * rho (jc, jk ,jb) &
+        rho_half (jc, jk, jb) = wgtfac_c(jc, jk, jb) * rho (jc, jk ,jb) & 
                                      + wgtfac_c_jkm1 * rho (jc, jk - 1, jb)
-        temp_half(jc, jk, jb) = wgtfac_c(jc, jk, jb) * temp(jc, jk, jb) &
+        temp_half(jc, jk, jb) = wgtfac_c(jc, jk, jb) * temp(jc, jk, jb) & 
                                      + wgtfac_c_jkm1 * temp(jc, jk - 1, jb)
         u_fld(jc, jk, jb) = wgtfac_c(jc, jk, jb) * u(jc, jk, jb) &
                                  + wgtfac_c_jkm1 * u(jc, jk - 1, jb)
@@ -1334,8 +1334,8 @@ SUBROUTINE fieldsgrads( p_patch, p_int_state, rl_start, rl_end, nlev, z, zhalf, 
 
         ! Diag printout
         IF (msg_level >= 15) THEN
-          WRITE(message_text, '(a,3i6,E12.4)') 'jc, jk, temp(jc,jk,jb):', &
-                jc, jk, temp(jc, jk, jb)
+          WRITE(message_text, '(a,3i6,E12.4)') 'jc, jk, jb, temp(jc,jk,jb):', &
+                jc, jk, jb, temp(jc, jk, jb)
           CALL message('', TRIM(message_text))
         ENDIF
 
@@ -1359,8 +1359,8 @@ SUBROUTINE fieldsgrads( p_patch, p_int_state, rl_start, rl_end, nlev, z, zhalf, 
           ! Further decrease effects from long waves: facgamma  > 0.5
           ! Diag printout
           IF (msg_level >= 15) THEN
-            WRITE(message_text, '(a,3i6,2E12.4)') 'jc, jk, bvf2_full(jc,jk,jb), 1/gammash2_full(jc,jk,jb):', &
-                  jc, jk, bvf2_full(jc, jk, jb), 1._wp / gammash2_full(jc, jk, jb)
+            WRITE(message_text, '(a,3i6,2E12.4)') 'jc, jk, jb, bvf2_full(jc,jk,jb), 1/gammash2_full(jc,jk,jb):', &
+                  jc, jk, jb, bvf2_full(jc, jk, jb), 1._wp / gammash2_full(jc, jk, jb)
             CALL message('', TRIM(message_text))
           ENDIF
         ENDIF
@@ -1680,7 +1680,7 @@ SUBROUTINE init_gw_orretal(nlev,i_startidx,i_endidx,jray_start,jray_end,&
   REAL(wp) :: m(mdim)                      ! m launch vertical wavenumber element
   REAL(wp) :: dm(mdim)                     ! spectrum element size in m
   REAL(wp) :: kh(mdim,omegadim)            ! kh launch horizontal wavenumber element (kh=sqrt(k^2+l^2))
-  REAL(wp) :: dkh(mdim,omegadim)           ! spectrum element size in kh
+  REAL(wp) :: dkh(mdim,omegadim)           ! spectrum element size in kh 
   REAL(wp) :: cgz                          ! vertical group velocity at ray position
   REAL(wp) :: fct                          ! factor = rho/bvf
   REAL(wp) :: fnorm(iazidim)               ! normalisation factor (A)
@@ -1720,31 +1720,31 @@ SUBROUTINE init_gw_orretal(nlev,i_startidx,i_endidx,jray_start,jray_end,&
     &                   'MS-GWaM: initialize Desaubies type background GW field')
 
   !----------------------------------------------------------------------
-  ! Purpose:
-  !         Calculate launch spectrum for "background" GWs based on the
-  !         Desaubies spectra. For the time being this source in MS-GWaM
-  !         is meant to represent in a very simple manner
-  !         -- either a simplified all non-orographic GW sources (if
-  !            convective sources turned off)
-  !         -- or GWs emmitted by jets/fronts (if convective sources
+  ! Purpose: 
+  !         Calculate launch spectrum for "background" GWs based on the 
+  !         Desaubies spectra. For the time being this source in MS-GWaM 
+  !         is meant to represent in a very simple manner 
+  !         -- either a simplified all non-orographic GW sources (if 
+  !            convective sources turned off) 
+  !         -- or GWs emmitted by jets/fronts (if convective sources 
   !            turned on)
   !
   ! Method:
-  !         -- PART 1) calculate mom. flux launch spectrum in (c,phi)
+  !         -- PART 1) calculate mom. flux launch spectrum in (c,phi) 
   !                    based on mo_gwd_wms.f90
-  !         -- PART 2) translate the launch mom. flux spectra (c,phi)
+  !         -- PART 2) translate the launch mom. flux spectra (c,phi) 
   !                    into a launch wave action density spectra (k,l,m)
   !         -- see Orr et al. (2010) and Scinocca et al. (2003)
   !----------------------------------------------------------------------
 
   ! Note: the launch mom. flux spectrum calculation is based on the assumption
   ! that the POSITIVE FREQUENCY BRANCH IS USED, which also means that a NEGATIVE
-  ! VERTICAL WAVENUMBER spectrum will be used. This results in upward propagating
+  ! VERTICAL WAVENUMBER spectrum will be used. This results in upward propagating 
   ! gravity waves (cgz > 0) injected at launch level.
 
   jray_offset = jray_start - 1
 
-  ! Calculate time dependent launch flux magnitudes. Currently, only the Gregorian
+  ! Calculate time dependent launch flux magnitudes. Currently, only the Gregorian 
   ! calendar with leap years is considered.
   tfact = ( ndaysoffset(mdatetime%date%month) + REAL(mdatetime%date%day-1,wp) )*24._wp  &
     &     + REAL(mdatetime%time%hour,wp) + REAL(mdatetime%time%minute,wp)/60._wp        &
@@ -1769,7 +1769,7 @@ SUBROUTINE init_gw_orretal(nlev,i_startidx,i_endidx,jray_start,jray_end,&
   ! PART 1: calculate launch spectrum in (c,phi) space (based on mo_gwd_wms.f90)
   ! ----------------------------------------------------------------------------
 
-  ! Set same dimension for m and c spectral elements, we suppose keeping cdim
+  ! Set same dimension for m and c spectral elements, we suppose keeping cdim 
   ! (and not simply using mdim everywhere) keeps the code more understandable
   cdim = mdim
 
@@ -1800,8 +1800,8 @@ if(abs(lat(jc))>85.*deg2rad) cycle
 
 
     ! Horizontal propagation test
-    ! Horizontal localization of the source: skip calculations
-    ! if ltest_hprop=.true. and cell is out of the area defined
+    ! Horizontal localization of the source: skip calculations 
+    ! if ltest_hprop=.true. and cell is out of the area defined 
     ! by lonrmin, lonrmax, latrmin, latrmax
     IF (ltest_hprop) THEN
       IF (lon(jc)*rad2deg > lonrmax .OR. &
@@ -1819,7 +1819,7 @@ if(abs(lat(jc))>85.*deg2rad) cycle
       ENDIF
     ENDIF
 
-    ! Skip calculations for this cell if local
+    ! Skip calculations for this cell if local 
     ! latitudinal profile is zero
     IF (lat_prof(jc) == 0._wp) CYCLE
 
@@ -1838,8 +1838,8 @@ if(abs(lat(jc))>85.*deg2rad) cycle
     bvfl = SQRT(bvfl2(jc))
     fct = rhol(jc)/bvfl
 
-    ! Set mom. flux spectra (c,phi) at launch level: Eq. (25) of Scinocca 2003 (not
-    ! including the 'A' component), and with U-Uo=0.
+    ! Set mom. flux spectra (c,phi) at launch level: Eq. (25) of Scinocca 2003 (not 
+    ! including the 'A' component), and with U-Uo=0. 
     fluxin(:,:) = 0._wp
     IF(nslope==1) THEN
       ! s=1 case
@@ -1893,7 +1893,7 @@ if(abs(lat(jc))>85.*deg2rad) cycle
       fnorm(iazi)=fluxlaun/pu(jklaunch,iazi)
     ENDDO
 
-    ! Introduce latitudional dependence of the launch mom. flux. If lozpr=.true. then
+    ! Introduce latitudional dependence of the launch mom. flux. If lozpr=.true. then 
     ! increase launch flux over tropics fnorm:=A in Scinocca 2003 (independent of height)
     IF (lozpr) THEN
       IF (ngauss==1) THEN
@@ -1955,9 +1955,9 @@ if(abs(lat(jc))>85.*deg2rad) cycle
     ENDIF
 
     ! --------------------------------------------------------------------
-    ! PART 2: translate the launch mom. flux spectra (c,phi) into a launch
-    !         wave action density spectra (k,l,m). Calculate wave action
-    !         density N(k,l,m) based on fluxes rho*F(c,phi). See steps of
+    ! PART 2: translate the launch mom. flux spectra (c,phi) into a launch 
+    !         wave action density spectra (k,l,m). Calculate wave action 
+    !         density N(k,l,m) based on fluxes rho*F(c,phi). See steps of 
     !         Scinocca (2003) in a reverse order from Eq.(25) to Eq.(14)
     !         and then define wave action density N = rho*F/kh/cgz/dk/dl/dm
     ! --------------------------------------------------------------------
@@ -1972,9 +1972,9 @@ if(abs(lat(jc))>85.*deg2rad) cycle
       DO ic=1,cdim
         DO iomega=1,omegadim
           flux1(iomega,ic,iazi) = fluxin(ic,iazi) * sp_omega_l(iomega)
-        ENDDO
-      ENDDO
-    ENDDO
+        ENDDO 
+      ENDDO 
+    ENDDO 
 
     ! Check if the integral of flux1 is still OK
     IF (msg_level >= 12) THEN
@@ -2004,7 +2004,7 @@ if(abs(lat(jc))>85.*deg2rad) cycle
     flux2(:,:,:) = 0._wp
     DO iazi=1,iazidim
       DO im=1,mdim
-        ! To avoid confusions still use different indices but eventually
+        ! To avoid confusions still use different indices but eventually 
         ! they are the same
         ic = im
         ! Calculate m based on the hydrostatic dispersion relation
@@ -2048,7 +2048,7 @@ if(abs(lat(jc))>85.*deg2rad) cycle
     DO iazi=1,iazidim
       DO im=1,mdim
         DO ikh=1,khdim
-          ! To avoid confusions still use different indices but eventually
+          ! To avoid confusions still use different indices but eventually 
           ! they are the same
           iomega = ikh
           ! Calculate kh(m,omega) --> necessary for Step 5
@@ -2083,8 +2083,8 @@ if(abs(lat(jc))>85.*deg2rad) cycle
     ! ----------------------------------------------------------------------
     ! Step 4: rho*F(m,k_h,phi) --> rho*F(k,l,m)
     ! ----------------------------------------------------------------------
-    ! Note: This step is not done here explicitly. It is implicitly included
-    ! in the next step (Step 5) by taking into account that
+    ! Note: This step is not done here explicitly. It is implicitly included 
+    ! in the next step (Step 5) by taking into account that 
     ! rho*F(k,l,m) = rho*F(k_h,m,phi)/k_h
 
     ! --------------------------------------------------------------------
@@ -2137,7 +2137,7 @@ if(abs(lat(jc))>85.*deg2rad) cycle
           jrayprev = jr_last(jc,ispec)
 
           !-------------------------------------------------------------------------------------
-          ! Step 5.1.: locate the height of ray volume center-points (i.e. zlaunch(:), jkmid(:))
+          ! Step 5.1.: locate the height of ray volume center-points (i.e. zlaunch(:), jkmid(:)) 
           ! for the new ray volumes to be launched depending on the above cases A), B), C), D)
           !-------------------------------------------------------------------------------------
 
@@ -2151,23 +2151,23 @@ if(abs(lat(jc))>85.*deg2rad) cycle
               jkmid(0) = jklaunch   ! lower limit of jkmid for searching
             ELSE  ! jrayprev == -1
               ! D) This spectral element was launched last time but the
-              !    corresponding ray volume has propagated between two launch
+              !    corresponding ray volume has propagated between two launch 
               !    times so far that its bottom is now above the launch level z_src.
               !    In this case several ray volumes are launched with this spectral
               !    ID until the ghost layer is filled.
               nlaunch = nlaunch_max
               DO il = 1, nlaunch
                 zlaunch(il) = zhalf(jc,jklaunch) - REAL(il,KIND=wp)*dzlaunch_def
-              ENDDO
+              ENDDO 
               jkmid(0) = jklaunch ! lower limit of jkmid for searching
             END IF
 
           ! This spectral element was also launched at the last launch time. We
-          ! know that from the fact that specid(jc,jrayprev) is negative, which
-          ! is how it will be given a value later in this subroutine.
+          ! know that from the fact that specid(jc,jrayprev) is negative, which 
+          ! is how it will be given a value later in this subroutine. 
           ELSE  ! specid(jc,jrayprev) == -ispec
 
-            ! Calculate height of the bottom of the previously emmitted ray
+            ! Calculate height of the bottom of the previously emmitted ray 
             ! volume with this spectral ID
             zray_d_prev = zray(jc,jrayprev) - 0.5_wp*dzray(jc,jrayprev)
 
@@ -2175,12 +2175,12 @@ if(abs(lat(jc))>85.*deg2rad) cycle
             !    so we do not launch this spectral element this time.
             IF (zray_d_prev < zb_ghost)  CYCLE  ! im (ispec)
 
-            ! C) The ray volume is completely above the the ghost layer's bottom
+            ! C) The ray volume is completely above the the ghost layer's bottom 
             !    so we launch a new one from this spectral element.
             nlaunch = MIN(nlaunch_max,INT((zray_d_prev - zb_ghost)/dzlaunch_def)+1)
             DO il = 1, nlaunch
               zlaunch(il) = zray(jc,jrayprev) - REAL(il,KIND=wp)*dzlaunch_def
-            ENDDO
+            ENDDO 
             jkmid(0) = iexist(jc,jrayprev)   ! lower limit of jkmid for searching
 
           ENDIF
@@ -2203,7 +2203,7 @@ if(abs(lat(jc))>85.*deg2rad) cycle
 
             ! Ray counter
             jray = jray + 1
-
+ 
             ! Do not overwrite existing rays
             DO WHILE (iexist(jc,jray) /= 0)
               jray = jray + 1
@@ -2227,16 +2227,16 @@ if(abs(lat(jc))>85.*deg2rad) cycle
             dlatray(jc,jray) = dlat
 
             ! Background GWs are active above their launch level constant in
-            ! time: jklaunch (calculated from the namelist parameter plaunch)
+            ! time: jklaunch (calculated from the namelist parameter plaunch) 
             jk_active(jc,jray) = jklaunch
 
-            ! Retain spectral id of the newly initialized ray. The negative sign
-            ! denotes that the ray volume is "new", i.e. it has been launched at
-            ! the previous launch time. This is turned into its absolute value in
-            ! subroutine propagate_wave when the ray volumes becomes "old" (i.e.
+            ! Retain spectral id of the newly initialized ray. The negative sign 
+            ! denotes that the ray volume is "new", i.e. it has been launched at 
+            ! the previous launch time. This is turned into its absolute value in 
+            ! subroutine propagate_wave when the ray volumes becomes "old" (i.e. 
             ! not launched at the previous launch time but sometime before).
             specid(jc,jray) = -ispec
-
+ 
             ! Vector to retain indices of new rays (only diagnostic purpose)
             vecnew(jc,ispec) = jray
 
@@ -2353,7 +2353,7 @@ if(abs(lat(jc))>85.*deg2rad) cycle
               !  lray(jc,jray)  = -kh(im,iomega)
               !  dlray(jc,jray) = dkh(im,iomega)
               !ENDIF
-              ! One may copy any azimuthal direction here
+              ! One may copy any azimuthal direction here 
               ! if testing other propagation directions
             ELSEIF (ltest_hprop .AND. iazidim == 8) THEN
               kray(jc,jray)  = 0._wp
@@ -2367,7 +2367,7 @@ if(abs(lat(jc))>85.*deg2rad) cycle
                 lray(jc,jray)  = -kh(im,iomega)/SQRT(2._wp)
                 dlray(jc,jray) = SQRT(dkh(im,iomega)*kh(im,iomega)*dphi)
               ENDIF
-              ! One may copy any azimuthal direction here
+              ! One may copy any azimuthal direction here 
               ! if testing other propagation directions
             ENDIF
 
@@ -2377,7 +2377,7 @@ if(abs(lat(jc))>85.*deg2rad) cycle
             ! Extent in m direction
             dmray(jc,jray) = dm(im)
 
-            ! Vertical group velocity at the ray volume center-point
+            ! Vertical group velocity at the ray volume center-point 
             ! TODO: this is based on hydrostatic disp. rel. to be consistent
             !       with Orr et al. (2010) and Scinocca (2003). This might be
             !       changed at some point to the full disp. rel. but then one
@@ -2388,9 +2388,9 @@ if(abs(lat(jc))>85.*deg2rad) cycle
             ! (This is what was supposedto be done in Step 4 ...)
             fluxray = flux3(ikh,im,iazi)/kh(im,iomega)
 
-            ! Suggestion by Young-Ha: division by dphi for consistency
-            ! with Scinocca (2003), i.e. mo_gwd_wms.f90.
-            ! TODO: This may work for n_direction = 4 (not yet considered
+            ! Suggestion by Young-Ha: division by dphi for consistency 
+            ! with Scinocca (2003), i.e. mo_gwd_wms.f90. 
+            ! TODO: This may work for n_direction = 4 (not yet considered 
             !       for the other cases)
             fluxray = fluxray/dphi
 
@@ -2446,7 +2446,7 @@ if(abs(lat(jc))>85.*deg2rad) cycle
 
           ENDDO ! il
 
-          ! Retain ray volume index of this spectral
+          ! Retain ray volume index of this spectral 
           ! element for the next launch time
           jr_last(jc,ispec) = jray
 
@@ -2528,7 +2528,7 @@ SUBROUTINE init_gw_conv(nlev,jb,i_startidx,i_endidx,jray_offset,nlaunch_max,  &
     &  'MS-GWaM: initialize GW field from convection')
 
   !----------------------------------------------------------------------
-  ! Purpose:
+  ! Purpose: 
   !         Launch ray volumes for the convective GW spectra calculated
   !         in the source scheme.
   !
@@ -2691,7 +2691,7 @@ if(abs(clat(jc))>85.*deg2rad) cycle
 
         ! Ray counter
         jray = jray + 1
-
+ 
         ! Do not overwrite existing rays
         DO WHILE (p_ray(jg)%iexist(jc,jray,jb) /= 0)
           jray = jray + 1
@@ -2700,7 +2700,7 @@ if(abs(clat(jc))>85.*deg2rad) cycle
         p_ray(jg)%jk_active(jc,jray,jb) = p_ray_conv(jg)%jk_source(jc,jb)
 
         p_ray(jg)%specid(jc,jray,jb) = -specid
-
+ 
         p_ray(jg)%iexist(jc,jray,jb) = jkmid(il)
         p_ray(jg)%z     (jc,jray,jb) = zlaunch(il)
         p_ray(jg)%lon   (jc,jray,jb) = clon(jc)
@@ -2780,28 +2780,28 @@ SUBROUTINE remove_rays(nlev,i_startidx,i_endidx,jray_start,jray_end,nrays_vacate
   IF (msg_level >= 12) CALL message('remove_rays', 'MS-GWaM: remove rays')
 
   !----------------------------------------------------------------------
-  ! Purpose:
-  !         Remove ray volumes if exceeding a certain amount in order to
-  !         limit CPU costs. Without this removal the only sink of ray
-  !         volumes is the propagation out of the vertical domain, which
+  ! Purpose: 
+  !         Remove ray volumes if exceeding a certain amount in order to 
+  !         limit CPU costs. Without this removal the only sink of ray 
+  !         volumes is the propagation out of the vertical domain, which 
   !         might not compensate the accumulation by GW sources.
   !
   ! Method:
-  !         -- remove ray volumes with too small wavelength (<~1m) and
-  !            those placed in B-V frequency regions that are statically
+  !         -- remove ray volumes with too small wavelength (<~1m) and 
+  !            those placed in B-V frequency regions that are statically 
   !            unstable
   !         -- calculate GW energy fraction carried by each ray volume
-  !         -- remove ray volumes with lowest energy in a distributed
+  !         -- remove ray volumes with lowest energy in a distributed 
   !            manner over all vertical layers
-  !         -- only "old" rays (specid(jc,jray) >= 0) will be removed so
+  !         -- only "old" rays (specid(jc,jray) >= 0) will be removed so 
   !            that no filtering of the GW source is done right away
-  !         -- this subroutine is to be called separately for ray volumes
+  !         -- this subroutine is to be called separately for ray volumes 
   !            from each source (convective / background)
   ! TODO:
-  !         Change this routine to a merge subroutine where ray volumes
-  !         close to each other in phase space are merged (an expensive
+  !         Change this routine to a merge subroutine where ray volumes 
+  !         close to each other in phase space are merged (an expensive 
   !         vesrion of such a scheme is available in the MS-GWaM toymodel
-  !         but its application in the ICON implementation is out of
+  !         but its application in the ICON implementation is out of 
   !         question).
   !----------------------------------------------------------------------
 
@@ -2852,7 +2852,7 @@ SUBROUTINE remove_rays(nlev,i_startidx,i_endidx,jray_start,jray_end,nrays_vacate
     ! If nothing is to be removed
     IF (nremove_total <= 0)  CYCLE  ! jc
 
-    ! Normal case: the maximum no. of ray volumes to
+    ! Normal case: the maximum no. of ray volumes to 
     ! be removed is nrays_add_bg(jg) or nrays_add_cv(jg)
     IF (nremove_total < nrays_active_total) THEN
 
@@ -2895,10 +2895,10 @@ SUBROUTINE remove_rays(nlev,i_startidx,i_endidx,jray_start,jray_end,nrays_vacate
 
     ELSE  ! nremove_total >= nrays_active_total
 
-      ! It will be very strange if this happens. It may mean that almost
-      ! all of the array were occupied by volumes in the ghost layer.
+      ! It will be very strange if this happens. It may mean that almost 
+      ! all of the array were occupied by volumes in the ghost layer. 
       ! A warning is kept for this case.
-      ! TODO: if this ever happens, further analysis is needed
+      ! TODO: if this ever happens, further analysis is needed  
       !       to find out the exact reason and how to avoid it
 
       l_warning(jc) = .TRUE.
@@ -2940,10 +2940,10 @@ SUBROUTINE idx_rayedge(nlev,i_startidx,i_endidx,jray_start,jray_end,z,zhalf, &
   INTEGER                      :: jkmid
   INTEGER                      :: jray
   REAL(wp)                     :: zray_d, zray_u
-
+ 
   !----------------------------------------------------------------------
-  ! Purpose:
-  !         Calculate the vertical level indices corresponding to the
+  ! Purpose: 
+  !         Calculate the vertical level indices corresponding to the 
   !         "bottom" and the "top" of a single ray volume.
   !
   ! Method:
@@ -3009,7 +3009,7 @@ SUBROUTINE idx_rayedge(nlev,i_startidx,i_endidx,jray_start,jray_end,z,zhalf, &
 
     ENDDO
   ENDDO
-
+ 
 END SUBROUTINE idx_rayedge
 !!
 !!-------------------------------------------------------------------------
@@ -3076,19 +3076,19 @@ SUBROUTINE saturation(p_patch, jb, nlev,i_startidx,i_endidx,jray_start,jray_end,
   IF (msg_level >= 12) CALL message('saturation', 'MS-GWaM: wave breaking parametrization')
 
   !----------------------------------------------------------------------
-  ! Purpose:
-  !         Parameterize GW breaking (saturation), i.e. the corresponding
-  !         loss in GW energy and momentum fluxes.
+  ! Purpose: 
+  !         Parameterize GW breaking (saturation), i.e. the corresponding 
+  !         loss in GW energy and momentum fluxes.         
   !
   ! Method:
-  !         The method is based on Lindzen's idea that GWs break when
-  !         they turn the potential temperature gradient to statically
+  !         The method is based on Lindzen's idea that GWs break when 
+  !         they turn the potential temperature gradient to statically 
   !         unstable (d\theta/dz < 0).
   !         -- diagnose static instbility by \int dm m^2B^2 >= N^4
   !         -- calculate turbulent viscosity (in case of instability)
-  !         -- calculate reduction in wave action of ray volumes based
+  !         -- calculate reduction in wave action of ray volumes based 
   !            on the turbulent viscosity (in case of instability)
-  !         -- check whether static stability is set back after GW
+  !         -- check whether static stability is set back after GW 
   !            saturation
   !         -- see Bölöni et al. (2016, 2021)
   !----------------------------------------------------------------------
@@ -3200,21 +3200,21 @@ SUBROUTINE saturation(p_patch, jb, nlev,i_startidx,i_endidx,jray_start,jray_end,
     diffusion_2dt(jc,nlevp1) = diffusion_2dt(jc,nlev)
   ENDDO
 
-  ! Loop for reducing wave action density
+  ! Loop for reducing wave action density 
   ! if m^2*B^2 exceeds saturation threshold
   DO jc = i_startidx, i_endidx
 
     DO jray = jray_start, jray_end
 
-      ! Skip those ray volumes that were not involved in the above calculation,
-      ! i.e. they do not exist or they did not cross over yet the launch level
+      ! Skip those ray volumes that were not involved in the above calculation, 
+      ! i.e. they do not exist or they did not cross over yet the launch level 
       ! z_src
       IF ( iexist(jc,jray) == 0 ) CYCLE
       zray_u = zray(jc,jray)+0.5_wp*dzray(jc,jray)
       IF ( specid(jc,jray) < 0 .AND. &
            zray_u < z(jc,jk_active(jc,jray)) ) CYCLE
 
-      ! Calculate largest possible diffusion coefficient among the layers
+      ! Calculate largest possible diffusion coefficient among the layers 
       ! crossed over by the ray volume
       jk1 = MAX(1     ,jkmin(jc,jray)-2)
       jk2 = MIN(nlevp1,jkmax(jc,jray)+2)
@@ -3244,11 +3244,11 @@ SUBROUTINE saturation(p_patch, jb, nlev,i_startidx,i_endidx,jray_start,jray_end,
   ENDDO ! jc
 
 
-  ! Re-calculate quantities for
+  ! Re-calculate quantities for 
   ! diagnostic purposes
   IF (ldiagprof) THEN
 
-    ! Initialize diag vars
+    ! Initialize diag vars 
     counter(:,:) = 1._wp       ! why 1 ?
     counter_old(:,:) = 1._wp
     kd(:,:)      = 0._wp
@@ -3511,22 +3511,22 @@ SUBROUTINE wave2grid(nlev,i_startidx,i_endidx,jray_start,jray_end,z,zhalf,fc,cel
   IF (msg_level >= 12) CALL message('wave2grid', 'MS-GWaM: flux and energy calculation')
 
   !----------------------------------------------------------------------
-  ! Purpose:
-  !         Project GW momentum fluxes (and other quantities) carried by
+  ! Purpose: 
+  !         Project GW momentum fluxes (and other quantities) carried by 
   !         Lagrangian ray volumes to the Eulerian grid.
   !
   ! Method:
-  !         -- loop over ray volumes
-  !         -- calculate fractional flux (energy, etc.) corresponding to
-  !            each vertical layer they cross over (jkmin, jkmax known
+  !         -- loop over ray volumes 
+  !         -- calculate fractional flux (energy, etc.) corresponding to 
+  !            each vertical layer they cross over (jkmin, jkmax known 
   !            from idx_rayedge)
-  !         -- add up these fractional fluxes (energy, etc.) for each
+  !         -- add up these fractional fluxes (energy, etc.) for each 
   !            vertical layer
-  !         -- horizontal (vertical) fluxes are calculated on full (half)
+  !         -- horizontal (vertical) fluxes are calculated on full (half) 
   !            levels
   !         -- see Bölöni et al. (2021)
   !
-  ! TODO:
+  ! TODO: 
   !----------------------------------------------------------------------
 
   nlevp1 = nlev+1
@@ -3536,7 +3536,7 @@ SUBROUTINE wave2grid(nlev,i_startidx,i_endidx,jray_start,jray_end,z,zhalf,fc,cel
   uuflux(:,:) = 0._wp  ; uvflux(:,:) = 0._wp  ; uwflux(:,:) = 0._wp
   vvflux(:,:) = 0._wp  ; vwflux(:,:) = 0._wp
   aptflux(:,:) = 0._wp ; utflux(:,:) = 0._wp  ; vtflux(:,:) = 0._wp
-  energy(:,:) = 0._wp  ; energy_p(:,:) = 0._wp
+  energy(:,:) = 0._wp  ; energy_p(:,:) = 0._wp 
   waction(:,:) = 0._wp
 
   ! Initialize fluxes in E, W, N, S directions
@@ -3614,8 +3614,9 @@ a_ray = a_ray*min(1._wp, max(0._wp, 1.-(acos(coslatray(jc,jray))*rad2deg-75.)/(8
       ! Calculate horizontal fluxes on full levels
       !
       DO jk = jkmin_half(jc,jray), jkmax_half(jc,jray) ! jkmin_half > 1, jkmax_half < nlevp1
-        ! Note: jkmin_half and jkmax_half denote the half level index above the
-        ! ray volume top/bottom
+        ! Note: jkmin_half and jkmax_half denote the half-level indices above the
+        ! top and bottom of the ray volume, respectively. An interval between
+        ! two half levels, [jk, jk+1], is centered on the full level jk.
 
         ! dzi: size of ray in z-direction corresponding to the actual full layer
         ! dz : full layer depth
@@ -3689,8 +3690,9 @@ a_ray = a_ray*min(1._wp, max(0._wp, 1.-(acos(coslatray(jc,jray))*rad2deg-75.)/(8
       ! Calculate vertical fluxes on half levels
       !
       DO jk = jkmin_full(jc,jray), jkmax_full(jc,jray)   ! jkmin_full > 1, jkmax_full <= nlev
-        ! Note: jkmin_full and jkmax_full denote the full level index below the
-        ! ray volume top/bottom
+        ! Note: jkmin_full and jkmax_full denote the full-level indices below the
+        ! top and bottom of the ray volume, respectively. An interval between
+        ! two full levels, [jk-1, jk], is (approximately) centered on the half level jk.
 
         ! dzi: size of ray in z-direction corresponding to the actual half layer
         ! dz : layer depth
@@ -3716,9 +3718,9 @@ a_ray = a_ray*min(1._wp, max(0._wp, 1.-(acos(coslatray(jc,jray))*rad2deg-75.)/(8
         ENDIF
 !       cgz_modif = cgz_modif*(omega2 - zero_expl*fc2(jc))
 
-        ! Note: The source in init_gw_orretal uses a hydrostatic, non-rotational
+        ! Note: The source in init_gw_orretal uses a hydrostatic, non-rotational 
         ! disp. rel.. In order to reproduce the launch flux defined in there
-        ! we keep the lines below.
+        ! we keep the lines below. 
         !omega2 = bvf2_half(jc,jk)*Kh2/mray(jc,jray)**2
         !cgz_modif = - branch*SQRT(omega2)/mray(jc,jray)
 
@@ -3737,7 +3739,7 @@ a_ray = a_ray*min(1._wp, max(0._wp, 1.-(acos(coslatray(jc,jray))*rad2deg-75.)/(8
 
       ENDDO ! jk
 
-      ! Calculate absolute pseudo-momentum flux and potential energy
+      ! Calculate absolute pseudo-momentum flux and potential energy 
       ! on full levels (only for diagnostics)
       !
       ! clean-up for (mf_xz_ray_full, mf_yz_ray_full)
@@ -3753,7 +3755,7 @@ a_ray = a_ray*min(1._wp, max(0._wp, 1.-(acos(coslatray(jc,jray))*rad2deg-75.)/(8
           &       + e_tot_ray(jk)/(1._wp + f2_o_bvf2(jk)*m2_p_gam2(jk)/Kh2)
       ENDDO ! jk
 
-      ! Calculate eastward / northward pseudo-momentum flux
+      ! Calculate eastward / northward pseudo-momentum flux 
       ! on full levels (only for diagnostics)
       IF ( lcalc_flux_4dir ) THEN
         IF (kray(jc,jray) > 0._wp) THEN
@@ -3773,8 +3775,11 @@ a_ray = a_ray*min(1._wp, max(0._wp, 1.-(acos(coslatray(jc,jray))*rad2deg-75.)/(8
           ENDDO
         END IF
 
-        DO jk = jkmin_full(jc,jray), jkmax_full(jc,jray)
-          
+        DO jk = jkmin_half(jc,jray), jkmax_half(jc,jray)  ! jkmax_half < nlevp1
+          ! Note: jkmin_half and jkmax_half denote the half-level indices above the
+          ! top and bottom of the ray volume, respectively. An interval between
+          ! two half levels, [jk, jk+1], is centered on the full level jk.
+
           ! calculate locally corrected wave number squares
           m2_p_gam2(jk) = m2 + gammash2_full(jc,jk)
           K2_p_gam2 = K2 + gammash2_full(jc,jk)
@@ -3788,7 +3793,7 @@ a_ray = a_ray*min(1._wp, max(0._wp, 1.-(acos(coslatray(jc,jray))*rad2deg-75.)/(8
           cgr = - branch * mray(jc, jray) / (SQRT(omega2) * K2_p_gam2) * (omega2 - fc2(jc))
 
           ! get partial height of ray volume in layer
-          dzi_o_dz = (MIN(zray_u, z(jc, jk-1)) - MAX(zray_d_eff, z(jc, jk)))  / (z(jc, jk-1) - z(jc, jk))
+          dzi_o_dz = (MIN(zray_u, zhalf(jc,jk)) - MAX(zray_d_eff, zhalf(jc,jk+1))) / (zhalf(jc,jk) - zhalf(jc,jk+1))
 
           ! calculate partial wave action associated to the vertical layer
           a_ray_jk = ABS(dzi_o_dz * a_ray)
@@ -3844,8 +3849,8 @@ a_ray = a_ray*min(1._wp, max(0._wp, 1.-(acos(coslatray(jc,jray))*rad2deg-75.)/(8
 !   energy_p(jc,1) = 0._wp ; energy_p(jc,nlev)   = 0._wp
 !   waction (jc,1) = 0._wp ; waction (jc,nlev)   = 0._wp
   ENDDO ! jc
-  ! Note: The other diagnostic outputs which are not directly involved
-  ! in the tendency calculation (absolute flux and fluxes at each direction)
+  ! Note: The other diagnostic outputs which are not directly involved 
+  ! in the tendency calculation (absolute flux and fluxes at each direction) 
   ! will have zero values at jk = 1 and nlev, as initialized.
 
   ! Smooth pseudo-momentum fluxes / energy with a Shapiro filter
@@ -3913,12 +3918,12 @@ SUBROUTINE tendency(p_patch,p_metrics,p_int_state,rho,temp,theta,p_fld)
   REAL(wp)              :: ddt_theta_gwd_mgm
   INTEGER               :: jk0
   REAL(wp)              :: inv_depth, flxgrad
-  REAL(wp), ALLOCATABLE :: ufl_hor_e(:,:,:)  ! horizontal flux of u
+  REAL(wp), ALLOCATABLE :: ufl_hor_e(:,:,:)  ! horizontal flux of u 
                                              ! at cell edge midpoints
-  REAL(wp), ALLOCATABLE :: vfl_hor_e(:,:,:)  ! horizontal flux of v
+  REAL(wp), ALLOCATABLE :: vfl_hor_e(:,:,:)  ! horizontal flux of v 
                                              ! at cell edge midpoints
   REAL(wp), ALLOCATABLE :: ptfl_hor_e(:,:,:) ! horizontal flux of pot temp
-                                             ! at cell edge midpoints
+                                             ! at cell edge midpoints 
   REAL(wp), ALLOCATABLE :: ufldiv_hor(:,:,:) ! horizontal div of u fluxes
   REAL(wp), ALLOCATABLE :: vfldiv_hor(:,:,:) ! horizontal div of v fluxes
   REAL(wp), ALLOCATABLE :: ptfldiv_hor(:,:,:)! horizontal div of pot temp fluxes
@@ -3929,7 +3934,7 @@ SUBROUTINE tendency(p_patch,p_metrics,p_int_state,rho,temp,theta,p_fld)
 
   !----------------------------------------------------------------------
   ! Purpose:
-  !         Calculate tendencies based on momentum flux convergence and
+  !         Calculate tendencies based on momentum flux convergence and 
   !         the elastic terms
   !
   ! Method:
@@ -3940,7 +3945,7 @@ SUBROUTINE tendency(p_patch,p_metrics,p_int_state,rho,temp,theta,p_fld)
   !         -- tendencies defined on full levels
   !
   ! TODO:
-  !
+  ! 
   !
   !----------------------------------------------------------------------
 
@@ -4158,7 +4163,7 @@ SUBROUTINE tendency(p_patch,p_metrics,p_int_state,rho,temp,theta,p_fld)
 !$OMP            inv_rho, inv_dzrho, fc_o_rho_th, ddt_theta_gwd_mgm)
 
   DO jb = i_startblk, i_endblk
-
+  
     CALL get_indices_c(p_patch, jb, i_startblk, i_endblk, &
       & i_startidx, i_endidx, rl_start, rl_end)
 
@@ -4405,7 +4410,7 @@ SUBROUTINE propagate_wave(dt_prop, jb, nlev, i_startidx, i_endidx, jray_start, j
   !         -- extension for from 2D to 6D
   !
   ! TODO:
-  !         Complete this short documentation regarding
+  !         Complete this short documentation regarding 
   !         the extention to 6D
   !----------------------------------------------------------------------
 
@@ -4423,7 +4428,7 @@ SUBROUTINE propagate_wave(dt_prop, jb, nlev, i_startidx, i_endidx, jray_start, j
   IF (msg_level >= 12) THEN
     DO jray = jray_start, jray_end
       WRITE(message_text,'(a,i6,5E12.4)') 'jray, zray, dzray, mray, dmray, wadens:', &
-        &       jray, zray(jray,1), dzray(jray,1), mray(jray,1), dmray(jray,1), dens(jray,1)
+        &       jray, zray(1, jray), dzray(1, jray), mray(1, jray), dmray(1, jray), dens(1, jray)
       CALL message('propagate_wave', TRIM(message_text))
     ENDDO
     IF (msg_level >= 15) THEN
@@ -4970,14 +4975,14 @@ endif
         IF (ltest_hprop .AND. (.NOT. ltest_gcircle)) THEN
           IF (.NOT. is_plane_torus) THEN
             ! Prescribe constant longitudinal group velocity
-            !cglon_l = signwn(kray(jc,jray))*30._wp/86400._wp*deg2rad ! 30 degrees/day (in radians/seconds)
+            !cglon_l = signwn(kray(jc,jray))*30._wp/86400._wp*deg2rad ! 30 degrees/day (in radians/seconds) 
             !cglon_r = signwn(kray(jc,jray))*30._wp/86400._wp*deg2rad ! 30 degrees/day (in radians/seconds)
-            cglon_l = signwn(kray(jc,jray))*3._wp/86400._wp*deg2rad ! 30 degrees/day (in radians/seconds)
+            cglon_l = signwn(kray(jc,jray))*3._wp/86400._wp*deg2rad ! 30 degrees/day (in radians/seconds) 
             cglon_r = signwn(kray(jc,jray))*3._wp/86400._wp*deg2rad ! 30 degrees/day (in radians/seconds)
             ! Prescribe constant meridional group velocity
-            !cglat_f = signwn(lray(jc,jray))*30._wp/86400._wp*deg2rad ! 30 degrees/day (in radians/seconds)
+            !cglat_f = signwn(lray(jc,jray))*30._wp/86400._wp*deg2rad ! 30 degrees/day (in radians/seconds) 
             !cglat_b = signwn(lray(jc,jray))*30._wp/86400._wp*deg2rad ! 30 degrees/day (in radians/seconds)
-            cglat_f = signwn(lray(jc,jray))*3._wp/86400._wp*deg2rad ! 30 degrees/day (in radians/seconds)
+            cglat_f = signwn(lray(jc,jray))*3._wp/86400._wp*deg2rad ! 30 degrees/day (in radians/seconds) 
             cglat_b = signwn(lray(jc,jray))*3._wp/86400._wp*deg2rad ! 30 degrees/day (in radians/seconds)
             ! Prescribe zero vertical group velocity
             cgz_d = 0._wp
@@ -5121,8 +5126,8 @@ endif
 
       ENDDO ! jstage
 
-      ! Take absolute value of ray extents in physical space so that
-      ! they are > 0 in the next time step.
+      ! Take absolute value of ray extents in physical space so that 
+      ! they are > 0 in the next time step. 
 #ifndef __msgwam1d
       dlonray(jc,jray) = ABS(dlonray(jc,jray)*coslatray(jc,jray))   ! scaled
       dlatray(jc,jray) = ABS(dlatray(jc,jray))
@@ -5130,7 +5135,7 @@ endif
       dzray(jc,jray)   = ABS(dzray(jc,jray))
 
       ! TODO: introduce splitting routine instead the solution below
-      ! Limit the vertical size by dzraymin and dzraymax
+      ! Limit the vertical size by dzraymin and dzraymax 
       ! (defined in the namelist)
 #ifndef __msgwam1d
       dlonray(jc,jray) = MAX(darcraymin, MIN(darcraymax, dlonray(jc,jray)))
@@ -5229,7 +5234,7 @@ endif
       OPEN(987,FILE=filename_ltest_hprop,STATUS='UNKNOWN',POSITION='APPEND')
       WRITE(987,'(a,i4,2x,i4,2x,F14.5,2x,F14.5)') &
              'Prop wave position: jc, jb, lon, lat:', &
-             jc, jb, lonray(jc,jray)*rad2deg, latray(jc,jray)*rad2deg
+             jc, jb, lonray(jc,jray)*rad2deg, latray(jc,jray)*rad2deg 
       CLOSE(987)
     ELSE IF (ltest_hprop .AND. l1ray .AND. is_plane_torus) THEN
       OPEN(987,FILE=filename_ltest_hprop,STATUS='UNKNOWN',POSITION='APPEND')
@@ -5348,7 +5353,7 @@ SUBROUTINE split_merge_volume( p_ray, p_spl, p_rwork, p_patch, c_nb, ncol_int, z
     &         lat_sn0(2) ,  &
     &         ray_xyz(3)
   REAL(wp) :: coslat_dlon
-  LOGICAL  :: intriangle
+  INTEGER  :: intriangle
 #ifdef __mgm_oog
   INTEGER  :: nnb_n
 #endif
@@ -5609,7 +5614,7 @@ END IF
           DO jn = 1, 1 + c_nb(jc,jb)% n_neighbor
             intriangle = inside_triangle_torus( ray_xyz,   &
               &  c_nb(jc,jb)% v_cart(1,jn), c_nb(jc,jb)% v_cart(2,jn), c_nb(jc,jb)% v_cart(3,jn) )
-            IF ( intriangle ) THEN
+            IF ( intriangle >= 0 ) THEN
               IF (c_nb(jc,jb)%jcol_c(jn) > 0) THEN
                 p_spl% jcol(1,jc,jray,jb) = c_nb(jc,jb)%jcol_c(jn)
                 p_spl% mode(jc,jray,jb) = imode_nosplit
@@ -5634,7 +5639,7 @@ END IF
             DO jn = 1, 1 + c_nb(jc,jb)% n_neighbor
               intriangle = inside_triangle_torus( ray_xyz,   &
                 &  c_nb(jc,jb)% v_cart(1,jn), c_nb(jc,jb)% v_cart(2,jn), c_nb(jc,jb)% v_cart(3,jn) )
-              IF ( intriangle ) THEN
+              IF ( intriangle >= 0 ) THEN
                 p_spl% jcol(jseg,jc,jray,jb) = c_nb(jc,jb)%jcol_c(jn)
                 EXIT
               END IF
@@ -5663,7 +5668,7 @@ END IF
             DO jn = 1, 1 + c_nb(jc,jb)% n_neighbor
               intriangle = inside_triangle_torus( ray_xyz,   &
                 &  c_nb(jc,jb)% v_cart(1,jn), c_nb(jc,jb)% v_cart(2,jn), c_nb(jc,jb)% v_cart(3,jn) )
-              IF ( intriangle ) THEN
+              IF ( intriangle >= 0 ) THEN
                 p_spl% jcol(jseg,jc,jray,jb) = c_nb(jc,jb)%jcol_c(jn)
                 EXIT
               END IF
@@ -5872,6 +5877,7 @@ END IF
 
 !$OMP PARALLEL
 !$OMP DO PRIVATE(jb)
+
   DO jb = i_startblk, i_endblk_int
     p_ray% iexist   (:,jray:jray_end,jb) = p_rwork% iexist   (:,jray:jray_end,jb)
     p_ray% specid   (:,jray:jray_end,jb) = p_rwork% specid   (:,jray:jray_end,jb)
@@ -6768,7 +6774,7 @@ SUBROUTINE sync_wave(p_ray,p_patch)
   !         Synchronize derived type elements of ray volume properties
   !
   ! Method:
-  !         -- based on sync_patch_array
+  !         -- based on sync_patch_array 
   !            (src/parallel_infrastructure/mo_sync.f90)
   !
   !----------------------------------------------------------------------
@@ -6842,14 +6848,14 @@ SUBROUTINE regrid_wave( p_patch,        & !in(out)
 
   REAL(wp) :: ray_xyz(3)
 
-  LOGICAL :: intriangle
+  INTEGER  :: intriangle
 
   !----------------------------------------------------------------------
   ! Purpose:
-  !
+  !         
   !
   ! Method:
-  !         --
+  !         -- 
   !
   !----------------------------------------------------------------------
 
@@ -6864,7 +6870,7 @@ SUBROUTINE regrid_wave( p_patch,        & !in(out)
 !!$OMP PARALLEL
 !!$OMP DO PRIVATE(jb, jc, jray_loc, jray_nb, i_startidx, i_endidx, jstencil, icn, ibn) ICON_OMP_GUIDED_SCHEDULE
 
-    ! Find ray volumes propagated to this cell from neighboring
+    ! Find ray volumes propagated to this cell from neighboring 
     ! cells and initialize them in the local cell
     DO jb = i_startblk, i_endblk ! jb index of the local cell
 
@@ -6911,7 +6917,7 @@ SUBROUTINE regrid_wave( p_patch,        & !in(out)
 
             intriangle = inside_triangle(ray_xyz, v1,v2,v3)
 
-            IF (intriangle) THEN
+            IF (intriangle >= 0) THEN
 
               jk0 = p_ray%iexist(icn,jray_nb,ibn)
               jk0p1 = MIN(p_patch% nlevp1, jk0+1)
@@ -6948,7 +6954,7 @@ SUBROUTINE regrid_wave( p_patch,        & !in(out)
                   'Something is strange in horizontal regridding: jray_loc>nrays')
 
               ! Initialize new ray volume
-              ! Synchronized properties: take them from the ray volume that moved
+              ! Synchronized properties: take them from the ray volume that moved 
               ! here from neighboring cell
               p_ray%iexist(jc,jray_loc,jb)    = jk0
               p_ray%specid(jc,jray_loc,jb)    = p_ray%specid(icn,jray_nb,ibn)
@@ -7012,7 +7018,7 @@ SUBROUTINE regrid_wave( p_patch,        & !in(out)
 !!$OMP PARALLEL
 !!$OMP DO PRIVATE(jb, jc, jray_loc, i_startidx, i_endidx, jstencil, icn, ibn) ICON_OMP_GUIDED_SCHEDULE
 
-    ! Find ray volumes that propagated out of this
+    ! Find ray volumes that propagated out of this 
     ! cell and remove them
     DO jb = i_startblk, i_endblk
 
@@ -7052,7 +7058,7 @@ SUBROUTINE regrid_wave( p_patch,        & !in(out)
 
           ! Remainder: ray volume either being inside this cell or escaped to a halo cell
 
-          ! Find ray volumes that propagated out of this cell and
+          ! Find ray volumes that propagated out of this cell and 
           ! remove them
           ! Ray volume center point in Cartesian coordinates
           ray_xyz(1) = p_ray%coslat(jc,jray_loc,jb)*COS(p_ray%lon(jc,jray_loc,jb))
@@ -7061,7 +7067,7 @@ SUBROUTINE regrid_wave( p_patch,        & !in(out)
 
           intriangle = inside_triangle(ray_xyz, v1,v2,v3)
 
-          IF (.NOT. intriangle) THEN
+          IF (intriangle < 0) THEN  ! not in triangle
 
             ! Remove ray volume
             p_ray%iexist(jc,jray_loc,jb) = 0
@@ -7083,7 +7089,7 @@ SUBROUTINE regrid_wave( p_patch,        & !in(out)
               CLOSE(987)
             ENDIF ! ltest_hprop .AND l1ray
 
-          ENDIF ! .NOT. intriangle
+          ENDIF ! not intriangle
 
         ENDDO  ! jray_loc
 
@@ -7099,7 +7105,7 @@ SUBROUTINE regrid_wave( p_patch,        & !in(out)
 !!$OMP PARALLEL
 !!$OMP DO PRIVATE(jb, jc, jray_loc, jray_nb, i_startidx, i_endidx, jstencil, icn, ibn) ICON_OMP_GUIDED_SCHEDULE
 
-    ! Find ray volumes propagated to this cell from neighboring
+    ! Find ray volumes propagated to this cell from neighboring 
     ! cells and initialize them in the local cell
     DO jb = i_startblk, i_endblk ! jb index of the local cell
 
@@ -7146,7 +7152,7 @@ SUBROUTINE regrid_wave( p_patch,        & !in(out)
 
             intriangle = inside_triangle_torus(ray_xyz, v1,v2,v3)
 
-            IF (intriangle) THEN
+            IF (intriangle >= 0) THEN
 
               jk0 = p_ray%iexist(icn,jray_nb,ibn)
               jk0p1 = MIN(p_patch% nlevp1, jk0+1)
@@ -7183,7 +7189,7 @@ SUBROUTINE regrid_wave( p_patch,        & !in(out)
                   'Something is strange in horizontal regridding: jray_loc>nrays')
 
               ! Initialize new ray volume
-              ! Synchronized properties: take them from the ray volume that moved
+              ! Synchronized properties: take them from the ray volume that moved 
               ! here from neighboring cell
               p_ray%iexist(jc,jray_loc,jb)    = jk0
               p_ray%specid(jc,jray_loc,jb)    = p_ray%specid(icn,jray_nb,ibn)
@@ -7247,7 +7253,7 @@ SUBROUTINE regrid_wave( p_patch,        & !in(out)
 !!$OMP PARALLEL
 !!$OMP DO PRIVATE(jb, jc, jray_loc, i_startidx, i_endidx, jstencil, icn, ibn) ICON_OMP_GUIDED_SCHEDULE
 
-    ! Find ray volumes that propagated out of this
+    ! Find ray volumes that propagated out of this 
     ! cell and remove them
     DO jb = i_startblk, i_endblk
 
@@ -7287,7 +7293,7 @@ SUBROUTINE regrid_wave( p_patch,        & !in(out)
 
           ! Remainder: ray volume either being inside this cell or escaped to a halo cell
 
-          ! Find ray volumes that propagated out of this cell and
+          ! Find ray volumes that propagated out of this cell and 
           ! remove them
           ! Ray volume center point in Cartesian coordinates
           ray_xyz(1) = p_ray%lon(jc,jray_loc,jb)
@@ -7296,7 +7302,7 @@ SUBROUTINE regrid_wave( p_patch,        & !in(out)
 
           intriangle = inside_triangle_torus(ray_xyz, v1,v2,v3)
 
-          IF (.NOT. intriangle) THEN
+          IF (intriangle < 0) THEN  ! not in triangle
 
             ! Remove ray volume
             p_ray%iexist(jc,jray_loc,jb) = 0
@@ -7318,7 +7324,7 @@ SUBROUTINE regrid_wave( p_patch,        & !in(out)
               CLOSE(987)
             ENDIF ! ltest_hprop .AND l1ray
 
-          ENDIF ! .NOT. intriangle
+          ENDIF ! not in triangle
 
         ENDDO  ! jray_loc
 
@@ -7354,11 +7360,11 @@ SUBROUTINE smooth_vert(nlev,i_startidx,i_endidx,npts,lchange_bdy, var)
     &  /), (/7,4/) )
 
   !----------------------------------------------------------------------
-  ! Purpose:
-  !         Smooth pseudo-momentum fluxes and energy in order to get rid
-  !         of waves with length scales <= 2dz. Such waves in the
-  !         projected fluxes / energy might be present e.g. due to sparse
-  !         ray volume distributions. The preferred smoothing method is a
+  ! Purpose: 
+  !         Smooth pseudo-momentum fluxes and energy in order to get rid 
+  !         of waves with length scales <= 2dz. Such waves in the 
+  !         projected fluxes / energy might be present e.g. due to sparse 
+  !         ray volume distributions. The preferred smoothing method is a 
   !         0th order Shapiro filter.
   !
   ! Method:
@@ -7367,7 +7373,7 @@ SUBROUTINE smooth_vert(nlev,i_startidx,i_endidx,npts,lchange_bdy, var)
 
   ! No. of half points for the smoothing stencil
   nstenc = ABS(npts)
-  ! ABS() is kept to avoid problems with older scripts where npts>0
+  ! ABS() is kept to avoid problems with older scripts where npts>0 
   ! meant a simpler moving average smooting (removed now).
 
   ! Keep the boundary conditions
@@ -7436,10 +7442,10 @@ SUBROUTINE smooth_hori( p_patch,        & !inout
 
   !----------------------------------------------------------------------
   ! Purpose:
-  !
+  !         
   !
   ! Method:
-  !         --
+  !         -- 
   !
   !----------------------------------------------------------------------
 
@@ -7447,9 +7453,8 @@ SUBROUTINE smooth_hori( p_patch,        & !inout
 !  CALL sync_patch_array(SYNC_C,p_patch,var)  ! placed outside to apply for multiple variables
 
   IF (.TRUE.) THEN
-
   ! All neighbor smoothing with weights suggested by Young-Ha:
-  ! 1) calculate non-weighted average of cells corresponding to
+  ! 1) calculate non-weighted average of cells corresponding to 
   !    each vertex of the actual cell
   ! 2) calculate non-weighted average of these 3 average values
   !
@@ -7540,7 +7545,7 @@ SUBROUTINE datout(nlev,idiag,zray,mray,dzray,dmray,dens,specid,zz_half,zz,rho,fl
   REAL(wp), INTENT(IN) :: B2(:), B2_save(:)
   REAL(wp), INTENT(IN) :: A(:), A_save(:)
   REAL(wp), INTENT(IN) :: mB2(:), mB2_save(:)
-  ! Others
+  ! Others 
   INTEGER ifield,irc30,ifield2,irc40,jk
   REAL(wp) fld_uinv(nlev+1), fld_vinv(nlev+1)
   REAL(wp) zz_half_inv(nlev+1), zz_inv(nlev)
@@ -7560,8 +7565,8 @@ SUBROUTINE datout(nlev,idiag,zray,mray,dzray,dmray,dens,specid,zz_half,zz,rho,fl
 
   !----------------------------------------------------------------------
   ! Purpose:
-  !         Output binary files to track subgrid-scale quantities and the
-  !         movement of ray volume center-points in z-m phase at selected
+  !         Output binary files to track subgrid-scale quantities and the 
+  !         movement of ray volume center-points in z-m phase at selected 
   !         lat,lon points.
   !
   ! Method:
@@ -7603,36 +7608,36 @@ SUBROUTINE datout(nlev,idiag,zray,mray,dzray,dmray,dens,specid,zz_half,zz,rho,fl
 !  OPEN(30,FILE=TRIM(filename_diag1(idiag)),FORM='unformatted',&
 !       ACCESS='direct',RECL=2*nrays(jg))
 !  irc30=0
-
+  
   ! output data defined on grid
   OPEN(40,FILE=TRIM(filename_diag2(idiag)),FORM='unformatted',&
        ACCESS='direct',RECL=2*nlev)
   irc40=0
-
+  
 !  ! Write out ray data
 !  ! Position, wavenumber, wave action density, dm
 !  irc30=(iout_msgwam-1)*6
-!
+!  
 !  DO ifield=1,6
 !     irc30=irc30+1
-!
+!  
 !     IF(ifield==1) fldsgl(:) = zray(:)
 !     IF(ifield==2) fldsgl(:) = mray(:)
 !     IF(ifield==3) fldsgl(:) = dens(:)
 !     IF(ifield==4) fldsgl(:) = dzray(:)
 !     IF(ifield==5) fldsgl(:) = dmray(:)
 !     IF(ifield==6) fldsgl(:) = REAL(specid(:),wp)
-!
+!  
 !     WRITE(30,REC=irc30)fldsgl
 !  ENDDO
-
+  
   ! Write out data on grid
   ! Mean-flow, momentum flux density, energy density 
   irc40=(iout_msgwam-1)*22
-
+  
   DO ifield2=1,22
      irc40=irc40+1
-
+  
      IF(ifield2==1)  fldsgl2(1:nlev)=zz_half_inv(2:nlev+1)
      IF(ifield2==2)  fldsgl2(1:nlev)=zz_inv(1:nlev)
      IF(ifield2==3)  fldsgl2(1:nlev)=rho_inv(2:nlev+1)
@@ -7696,7 +7701,7 @@ END FUNCTION dyn_visc_sutherland
 !!
 ELEMENTAL REAL(wp) FUNCTION signwn(k)
   !
-  ! Get sign of the wave number
+  ! Get sign of the wave number 
   ! or zero if it is zero
   !
   IMPLICIT NONE
@@ -7707,14 +7712,14 @@ ELEMENTAL REAL(wp) FUNCTION signwn(k)
   ELSE
     signwn = 0.
   ENDIF
-
+  
   RETURN
 END FUNCTION signwn
 !!
 !!-------------------------------------------------------------------------
 !!
 FUNCTION inside_triangle_torus(v, v1,v2,v3)
-  LOGICAL :: inside_triangle_torus
+  INTEGER :: inside_triangle_torus
   REAL(wp),       INTENT(IN)     :: v(3)  ! ray volume center point
   TYPE(t_point),  INTENT(IN)  :: v1,v2,v3 ! grid cell vertices
   ! local variables
@@ -7725,11 +7730,11 @@ FUNCTION inside_triangle_torus(v, v1,v2,v3)
   ! Pick x coordinates of cell vertices
   vecx = (/v1%x, v2%x, v3%x/)
 
-  ! If the cell has vertices corresponding to both sides of the
+  ! If the cell has vertices corresponding to both sides of the 
   ! domain, take action... some coordinates will have to be replaced
   ! before we actually perform any "in triangle" test.
   IF (MAXVAL(vecx) == domxmax .AND. MINVAL(vecx) == domxmin) THEN
-    ! Calculate vertex indices corresponding to domxmin, domxmax
+    ! Calculate vertex indices corresponding to domxmin, domxmax 
     ! and that of the third one.
     DO jvec = 1,3
       IF (vecx(jvec) == domxmin) jmin = jvec
@@ -7757,7 +7762,7 @@ FUNCTION inside_triangle_torus(v, v1,v2,v3)
   ! Pick y coordinates of cell vertices
   vecy = (/v1%y, v2%y, v3%y/)
 
-  ! If the cell has vertices corresponding to both sides of the
+  ! If the cell has vertices corresponding to both sides of the 
   ! domain, take action... some coordinates will have to be replaced
   ! before we actually perform any "in triangle" test.
   IF (MAXVAL(vecy) == domymax .AND. MINVAL(vecy) == domymin) THEN
@@ -7785,7 +7790,11 @@ FUNCTION inside_triangle_torus(v, v1,v2,v3)
   b = ((vecy(3) - vecy(1)) * (v(1) - vecx(3)) &
     +  (vecx(1) - vecx(3)) * (v(2) - vecy(3))) * invdenom
 
-  inside_triangle_torus = (a >= 0._wp .AND. b >= 0._wp .AND. a + b < 1._wp)
+    IF (a >= 0._wp .AND. b >= 0._wp .AND. a + b < 1._wp) THEN
+      inside_triangle_torus = 1
+    ELSE
+      inside_triangle_torus = 0
+    ENDIF
 
 END FUNCTION inside_triangle_torus
 !!
@@ -7869,7 +7878,7 @@ FUNCTION test_jkray( jkhalf, jc, zray, z_mc, jkhmax )
 
 END FUNCTION test_jkray
 
-SUBROUTINE test_blowup_uvt(p_patch, dudt, dvdt, dtdt, thr_u, thr_t)
+SUBROUTINE test_blowup_uvt(p_patch, dudt, dvdt, dtdt, thr_u, thr_t, stab_info)
 
   TYPE(t_patch), TARGET, INTENT(IN) :: p_patch              ! grid/patch info.
   REAL(wp),              INTENT(IN) :: dudt(:,:,:)
@@ -7877,6 +7886,7 @@ SUBROUTINE test_blowup_uvt(p_patch, dudt, dvdt, dtdt, thr_u, thr_t)
   REAL(wp),              INTENT(IN) :: dtdt(:,:,:)
   REAL(wp),              INTENT(IN) :: thr_u
   REAL(wp),              INTENT(IN) :: thr_t
+  CHARACTER (len=*),     INTENT(IN) :: stab_info
 
   INTEGER  :: rl_start, rl_end, i_startblk, i_endblk, i_startidx, i_endidx
   INTEGER  :: jc, jk, jb
@@ -7896,10 +7906,12 @@ SUBROUTINE test_blowup_uvt(p_patch, dudt, dvdt, dtdt, thr_u, thr_t)
       DO jc = i_startidx, i_endidx
         IF ( ABS(dudt(jc,jk,jb)) < thr_u .AND. ABS(dvdt(jc,jk,jb)) < thr_u .AND. &
           &  ABS(dtdt(jc,jk,jb)) < thr_t )  CYCLE
-        WRITE(message_text,'(a,i4,2f8.2,f8.4,a,f6.1,a)') 'YHK stab check9: ',  &
+        WRITE(message_text,'(a,i4,2f8.2,f8.4,a,2f6.1,2a)') 'MS-GWaM stability check: ',  &
           &  jk, ABS(dudt(jc,jk,jb)), ABS(dvdt(jc,jk,jb)), ABS(dtdt(jc,jk,jb)),  &
           &  ': jk, du/dt, dv/dt, dT/dt |',  &
-          &  p_patch%cells%center(jc,jb)%lat*rad2deg, ': lat'
+          &  p_patch%cells%center(jc,jb)%lat*rad2deg, &
+          &  p_patch%cells%center(jc,jb)%lon*rad2deg, ': (lat, lon) |', &
+          &  stab_info 
         CALL message('', TRIM(message_text))
 !       CALL finish('test_blowup_uvt', 'Too large tendencies are detected in MS-GWaM')
       ENDDO
