@@ -30,7 +30,7 @@ MODULE mo_nwp_msgwam_interface
   USE mo_exception,              ONLY: message
 !#ifdef msgwam
   USE mo_msgwam_config,          ONLY: lsteady, nrays, lmsgwam_offline, &
-                                       lmsgwam_noforce, ltest_restart
+                                       lmsgwam_noforce, ltest_restart, lmsgwam_pmomflux
   USE mo_msgwam,                 ONLY: gwdrag_msgwam
   USE mo_msgwam_stst,            ONLY: gwdrag_msgwam_stst
   USE mo_setup_msgwam_interface, ONLY: p_msgwam, msgwam_write_restartfiles
@@ -124,17 +124,30 @@ SUBROUTINE nwp_msgwam_interface( dt_call,                   & !>input
     i_startblk = p_patch%cells%start_block(rl_start)
     i_endblk   = p_patch%cells%end_block(rl_end)
 
-    DO jb = i_startblk, i_endblk
-      CALL get_indices_c( p_patch, jb, i_startblk, i_endblk,  &
-        &                 i_startidx, i_endidx, rl_start, rl_end )
+    IF (lmsgwam_pmomflux) THEN
+      DO jb = i_startblk, i_endblk
+        CALL get_indices_c( p_patch, jb, i_startblk, i_endblk,  &
+          &                 i_startidx, i_endidx, rl_start, rl_end )
 
-      prm_nwp_tend%        ddt_u_gwd    (i_startidx:i_endidx,:,jb)  &
-        &  = p_msgwam(jg)% ddt_u_gwd_mgm(i_startidx:i_endidx,:,jb)
-      prm_nwp_tend%        ddt_v_gwd    (i_startidx:i_endidx,:,jb)  &
-        &  = p_msgwam(jg)% ddt_v_gwd_mgm(i_startidx:i_endidx,:,jb)
-      prm_nwp_tend%        ddt_temp_drag(i_startidx:i_endidx,:,jb)  &
-        &  = p_msgwam(jg)% ddt_t_gwd_mgm(i_startidx:i_endidx,:,jb)
-    ENDDO
+        prm_nwp_tend%        ddt_u_gwd         (i_startidx:i_endidx,:,jb)  &
+          &  = p_msgwam(jg)% ddt_u_gwd_pmom_mgm(i_startidx:i_endidx,:,jb)
+        prm_nwp_tend%        ddt_v_gwd         (i_startidx:i_endidx,:,jb)  &
+          &  = p_msgwam(jg)% ddt_v_gwd_pmom_mgm(i_startidx:i_endidx,:,jb)
+        prm_nwp_tend%        ddt_temp_drag(i_startidx:i_endidx,:,jb) = 0
+      ENDDO
+    ELSE
+      DO jb = i_startblk, i_endblk
+        CALL get_indices_c( p_patch, jb, i_startblk, i_endblk,  &
+          &                 i_startidx, i_endidx, rl_start, rl_end )
+
+        prm_nwp_tend%        ddt_u_gwd    (i_startidx:i_endidx,:,jb)  &
+          &  = p_msgwam(jg)% ddt_u_gwd_mgm(i_startidx:i_endidx,:,jb)
+        prm_nwp_tend%        ddt_v_gwd    (i_startidx:i_endidx,:,jb)  &
+          &  = p_msgwam(jg)% ddt_v_gwd_mgm(i_startidx:i_endidx,:,jb)
+        prm_nwp_tend%        ddt_temp_drag(i_startidx:i_endidx,:,jb)  &
+          &  = p_msgwam(jg)% ddt_t_gwd_mgm(i_startidx:i_endidx,:,jb)
+      ENDDO
+    ENDIF
   END IF
 
 !#endif

@@ -61,7 +61,9 @@ MODULE mo_msgwam
   USE mo_timer
   USE mo_msgwam_config
   USE mo_setup_msgwam_interface
+  USE mo_msgwam_util,           ONLY: smooth_vert, smooth_hori
   USE mo_gw_source_config,      ONLY: gws_conv_config
+  USE mo_msgwam_diagnostics
 
   ! Modules for computing the Orr et al. 2010 launch spectrum
   USE data_gwd,    ONLY : nslope, gfluxlaun, &
@@ -138,6 +140,11 @@ SUBROUTINE gwdrag_msgwam ( dt_call,                   & ! input
   REAL(wp)                                   :: uwflux_cgw(nproma,p_patch%nlevp1)! uw momentum flux
   REAL(wp)                                   :: vvflux_cgw(nproma,p_patch%nlev) ! vv momentum flux
   REAL(wp)                                   :: vwflux_cgw(nproma,p_patch%nlevp1)! vw momentum flux
+  REAL(wp)                                   :: uupflux_cgw(nproma,p_patch%nlev) ! uu momentum flux
+  REAL(wp)                                   :: uvpflux_cgw(nproma,p_patch%nlev) ! uv momentum flux
+  REAL(wp)                                   :: uwpflux_cgw(nproma,p_patch%nlevp1)! uw momentum flux
+  REAL(wp)                                   :: vvpflux_cgw(nproma,p_patch%nlev) ! vv momentum flux
+  REAL(wp)                                   :: vwpflux_cgw(nproma,p_patch%nlevp1)! vw momentum flux
   ! Background
   REAL(wp)                                   :: rho_half(nproma,p_patch%nlevp1, p_patch%nblks_c)      ! rho at half levels
   REAL(wp)                                   :: bvf2_full(nproma, p_patch%nlev, p_patch%nblks_c)      ! N**2 at full levels
@@ -334,6 +341,79 @@ SUBROUTINE gwdrag_msgwam ( dt_call,                   & ! input
 
     IF (timers_level > 4) CALL timer_start(timer_msgwam_remove_rays)
 
+    !======================== Diagnostics ==================================
+    ! WA diagnostic
+    !=======================================================================
+
+    CALL idx_rayedge( nlev,i_startidx,i_endidx,1,nrays(jg),& ! (in)
+                      p_metrics%z_mc     (:,:,jb),        & ! (in)
+                      p_metrics%z_ifc    (:,:,jb),        & ! (in)
+                      p_ray(jg)%iexist   (:,:,jb),        & ! (in)
+                      p_ray(jg)%specid   (:,:,jb),        & ! (in)
+                      p_ray(jg)%jk_active(:,:,jb),        & ! (in)
+                      p_ray(jg)%z        (:,:,jb),        & ! (in)
+                      p_ray(jg)%dz       (:,:,jb),        & ! (in)
+                      p_ray(jg)%jk_full_rtop(:,:,jb),     & ! (inout)
+                      p_ray(jg)%jk_full_rbot(:,:,jb),     & ! (inout)
+                      p_ray(jg)%jk_half_rtop(:,:,jb),     & ! (inout)
+                      p_ray(jg)%jk_half_rbot(:,:,jb)      ) ! (inout)
+
+    CALL project_action(nlev        = nlev,                             & !
+                        i_startidx  = i_startidx,                       & !
+                        i_endidx    = i_endidx,                         & !
+                        jray_start  = jray_offset_bg(jg)+1,             & !
+                        jray_end    = jray_offset_bg(jg)+nrays_bg(jg),  & !
+                        z           = p_metrics%z_mc(:,:,jb),           & !
+                        zhalf       = p_metrics%z_ifc(:,:,jb),          & !
+                        cellarea    = p_patch%cells%area(:,jb),         & !
+                        zray        = p_ray(jg)%z(:,:,jb),              & !
+                        dzray       = p_ray(jg)%dz(:,:,jb),             & !
+                        coslatray   = p_ray(jg)%coslat(:,:,jb),         & !
+                        dlatray     = p_ray(jg)%dlat(:,:,jb),           & !
+                        dlonray     = p_ray(jg)%dlon(:,:,jb),           & !
+                        dkray       = p_ray(jg)%dk(:,:,jb),             & !
+                        dlray       = p_ray(jg)%dl(:,:,jb),             & !
+                        dmray       = p_ray(jg)%dm(:,:,jb),             & !
+                        dens        = p_ray(jg)%wadens(:,:,jb),         & !
+                        iexist      = p_ray(jg)%iexist(:,:,jb),         & !
+                        specid      = p_ray(jg)%specid(:,:,jb),         & !
+                        jk_active   = p_ray(jg)%jk_active(:,:,jb),      & !
+                        jkmin_full  = p_ray(jg)%jk_full_rtop(:,:,jb),   & !
+                        jkmax_full  = p_ray(jg)%jk_full_rbot(:,:,jb),   & !
+                        jkmin_half  = p_ray(jg)%jk_half_rtop(:,:,jb),   & !
+                        jkmax_half  = p_ray(jg)%jk_half_rbot(:,:,jb),   & !
+                        action      = p_fld%action_mgm_1(:,:,jb),       & !
+                        diag        = 0,                                & !
+                        jg          = jg                                ) !
+
+    CALL project_action(nlev        = nlev,                             & !
+                        i_startidx  = i_startidx,                       & !
+                        i_endidx    = i_endidx,                         & !
+                        jray_start  = jray_offset_cv(jg)+1,             & !
+                        jray_end    = jray_offset_cv(jg)+nrays_cv(jg),  & !
+                        z           = p_metrics%z_mc(:,:,jb),           & !
+                        zhalf       = p_metrics%z_ifc(:,:,jb),          & !
+                        cellarea    = p_patch%cells%area(:,jb),         & !
+                        zray        = p_ray(jg)%z(:,:,jb),              & !
+                        dzray       = p_ray(jg)%dz(:,:,jb),             & !
+                        coslatray   = p_ray(jg)%coslat(:,:,jb),         & !
+                        dlatray     = p_ray(jg)%dlat(:,:,jb),           & !
+                        dlonray     = p_ray(jg)%dlon(:,:,jb),           & !
+                        dkray       = p_ray(jg)%dk(:,:,jb),             & !
+                        dlray       = p_ray(jg)%dl(:,:,jb),             & !
+                        dmray       = p_ray(jg)%dm(:,:,jb),             & !
+                        dens        = p_ray(jg)%wadens(:,:,jb),         & !
+                        iexist      = p_ray(jg)%iexist(:,:,jb),         & !
+                        specid      = p_ray(jg)%specid(:,:,jb),         & !
+                        jk_active   = p_ray(jg)%jk_active(:,:,jb),      & !
+                        jkmin_full  = p_ray(jg)%jk_full_rtop(:,:,jb),   & !
+                        jkmax_full  = p_ray(jg)%jk_full_rbot(:,:,jb),   & !
+                        jkmin_half  = p_ray(jg)%jk_half_rtop(:,:,jb),   & !
+                        jkmax_half  = p_ray(jg)%jk_half_rbot(:,:,jb),   & !
+                        action      = p_fld%action_cgw_1(:,:,jb),       & !
+                        diag        = 0,                                & !
+                        jg          = jg                                ) !
+
     ! Remove ray volumes from convective sources
     IF ( ltimeadd_cv .AND. ( imethod_split <= 0 .AND. imethod_merge <= 0 ) ) THEN
       CALL remove_rays(      nlev         = nlev,                            & ! no. of full levels       (in)
@@ -493,6 +573,61 @@ SUBROUTINE gwdrag_msgwam ( dt_call,                   & ! input
 
     IF (timers_level > 4) CALL timer_stop(timer_msgwam_saturation)     !  temporary
 
+    CALL project_action(nlev        = nlev,                             & !
+                        i_startidx  = i_startidx,                       & !
+                        i_endidx    = i_endidx,                         & !
+                        jray_start  = jray_offset_bg(jg)+1,             & !
+                        jray_end    = jray_offset_bg(jg)+nrays_bg(jg),  & !
+                        z           = p_metrics%z_mc(:,:,jb),           & !
+                        zhalf       = p_metrics%z_ifc(:,:,jb),          & !
+                        cellarea    = p_patch%cells%area(:,jb),         & !
+                        zray        = p_ray(jg)%z(:,:,jb),              & !
+                        dzray       = p_ray(jg)%dz(:,:,jb),             & !
+                        coslatray   = p_ray(jg)%coslat(:,:,jb),         & !
+                        dlatray     = p_ray(jg)%dlat(:,:,jb),           & !
+                        dlonray     = p_ray(jg)%dlon(:,:,jb),           & !
+                        dkray       = p_ray(jg)%dk(:,:,jb),             & !
+                        dlray       = p_ray(jg)%dl(:,:,jb),             & !
+                        dmray       = p_ray(jg)%dm(:,:,jb),             & !
+                        dens        = p_ray(jg)%wadens(:,:,jb),         & !
+                        iexist      = p_ray(jg)%iexist(:,:,jb),         & !
+                        specid      = p_ray(jg)%specid(:,:,jb),         & !
+                        jk_active   = p_ray(jg)%jk_active(:,:,jb),      & !
+                        jkmin_full  = p_ray(jg)%jk_full_rtop(:,:,jb),   & !
+                        jkmax_full  = p_ray(jg)%jk_full_rbot(:,:,jb),   & !
+                        jkmin_half  = p_ray(jg)%jk_half_rtop(:,:,jb),   & !
+                        jkmax_half  = p_ray(jg)%jk_half_rbot(:,:,jb),   & !
+                        action      = p_fld%action_mgm_2(:,:,jb),       & !
+                        diag        = 0,                                & !
+                        jg          = jg                                ) !
+
+    CALL project_action(nlev        = nlev,                             & !
+                        i_startidx  = i_startidx,                       & !
+                        i_endidx    = i_endidx,                         & !
+                        jray_start  = jray_offset_cv(jg)+1,             & !
+                        jray_end    = jray_offset_cv(jg)+nrays_cv(jg),  & !
+                        z           = p_metrics%z_mc(:,:,jb),           & !
+                        zhalf       = p_metrics%z_ifc(:,:,jb),          & !
+                        cellarea    = p_patch%cells%area(:,jb),         & !
+                        zray        = p_ray(jg)%z(:,:,jb),              & !
+                        dzray       = p_ray(jg)%dz(:,:,jb),             & !
+                        coslatray   = p_ray(jg)%coslat(:,:,jb),         & !
+                        dlatray     = p_ray(jg)%dlat(:,:,jb),           & !
+                        dlonray     = p_ray(jg)%dlon(:,:,jb),           & !
+                        dkray       = p_ray(jg)%dk(:,:,jb),             & !
+                        dlray       = p_ray(jg)%dl(:,:,jb),             & !
+                        dmray       = p_ray(jg)%dm(:,:,jb),             & !
+                        dens        = p_ray(jg)%wadens(:,:,jb),         & !
+                        iexist      = p_ray(jg)%iexist(:,:,jb),         & !
+                        specid      = p_ray(jg)%specid(:,:,jb),         & !
+                        jk_active   = p_ray(jg)%jk_active(:,:,jb),      & !
+                        jkmin_full  = p_ray(jg)%jk_full_rtop(:,:,jb),   & !
+                        jkmax_full  = p_ray(jg)%jk_full_rbot(:,:,jb),   & !
+                        jkmin_half  = p_ray(jg)%jk_half_rtop(:,:,jb),   & !
+                        jkmax_half  = p_ray(jg)%jk_half_rbot(:,:,jb),   & !
+                        action      = p_fld%action_cgw_2(:,:,jb),       & !
+                        diag        = 0,                                & !
+                        jg          = jg                                ) !
 
     !============================ SATURATION ==============================
     ! Wave breaking scheme based on static instability criterion: if the GW 
@@ -558,11 +693,9 @@ SUBROUTINE gwdrag_msgwam ( dt_call,                   & ! input
 
     !============================ WAVE2GRID ===============================
     ! Project quantities of the Lagrangian ray volumes to the Eulerian grid 
-    ! and calculate pseudo-momentum fluxes, wave energy, etc.. 
+    ! and calculate momentum, pseudo-momentum, and temperature fluxes.
     ! The projection is done separately for GWs from the background and 
     ! from the convective sources
-    ! TODO: -- replace pseudo-momentum fluxes by real momentum fluxes
-    !       -- projection in horizontal if horizontal propagation
     !======================================================================
 
     IF (timers_level > 4) CALL timer_start(timer_msgwam_wave2grid)
@@ -604,35 +737,20 @@ SUBROUTINE gwdrag_msgwam ( dt_call,                   & ! input
                      gammash2_half   = gammash2_half(:,:,jb),           & ! inverse pinc scale height(in)
                      fc2             = fc2(:,jb),                       & ! Coriolis parameter**2    (in)
                      lcalc_flux_4dir = lcalc_flux_4dir_cv(jg),          & ! flag to calc. 4-fluxes   (in)
-                     u               = u(:, :, jb),                      & ! zonal wind (full levels)      (in)
-                     v               = v(:, :, jb),                      & ! meridional wind (full levels) (in)
-                     apmflux         = p_fld% apmfl_cgw   (:,:,jb),     & ! absolute p-momentum flux (out)
-                     amflux          = p_fld% amfl_cgw    (:,:,jb),     & ! absolute momentum flux   (out)
+                     u               = u(:, :, jb),                     & ! zonal wind (full levels)      (in)
+                     v               = v(:, :, jb),                     & ! meridional wind (full levels) (in)
                      uuflux          = uuflux_cgw(:,:),                 & ! uu mometum flux          (out)
                      uvflux          = uvflux_cgw(:,:),                 & ! uv mometum flux          (out)
                      uwflux          = uwflux_cgw(:,:),                 & ! uw mometum flux          (out)
                      vvflux          = vvflux_cgw(:,:),                 & ! vv mometum flux          (out)
                      vwflux          = vwflux_cgw(:,:),                 & ! vw mometum flux          (out)
-                     mflux_e         = p_fld% mfl_cgw_e   (:,:,jb),     & ! mometum flux E-ward      (out)
-                     mflux_w         = p_fld% mfl_cgw_w   (:,:,jb),     & ! mometum flux W-ward      (out)
-                     mflux_s         = p_fld% mfl_cgw_s   (:,:,jb),     & ! mometum flux S-ward      (out)
-                     mflux_n         = p_fld% mfl_cgw_n   (:,:,jb),     & ! mometum flux N-ward      (out)
-                     waflux_u        = p_fld% wafl_cgw_u  (:,:,jb),     & ! wave action flux U-ward  (out)
-                     waflux_d        = p_fld% wafl_cgw_d  (:,:,jb),     & ! wave action flux D-ward  (out)
-                     waflux_e        = p_fld% wafl_cgw_e  (:,:,jb),     & ! wave action flux E-ward  (out)
-                     waflux_w        = p_fld% wafl_cgw_w  (:,:,jb),     & ! wave action flux W-ward  (out)
-                     waflux_s        = p_fld% wafl_cgw_s  (:,:,jb),     & ! wave action flux S-ward  (out)
-                     waflux_n        = p_fld% wafl_cgw_n  (:,:,jb),     & ! wave action flux N-ward  (out)
-                     aptflux         = p_fld% aptfl_cgw   (:,:,jb),     & ! absolute pot temp flux   (out)
+                     uupflux         = uupflux_cgw(:,:),                & ! uu pseudo mometum flux   (out)
+                     uvpflux         = uvpflux_cgw(:,:),                & ! uv pseudo mometum flux   (out)
+                     uwpflux         = uwpflux_cgw(:,:),                & ! uw pseudo mometum flux   (out)
+                     vvpflux         = vvpflux_cgw(:,:),                & ! vv pseudo mometum flux   (out)
+                     vwpflux         = vwpflux_cgw(:,:),                & ! vw pseudo mometum flux   (out)
                      utflux          = utflux_cgw(:,:),                 & ! u theta flux             (out)
-                     vtflux          = vtflux_cgw(:,:),                 & ! v theta flux             (out)
-                     ptflux_e        = p_fld% ptfl_cgw_e  (:,:,jb),     & ! theta flux E-ward        (out)
-                     ptflux_w        = p_fld% ptfl_cgw_w  (:,:,jb),     & ! theta flux W-ward        (out)
-                     ptflux_s        = p_fld% ptfl_cgw_s  (:,:,jb),     & ! theta flux S-ward        (out)
-                     ptflux_n        = p_fld% ptfl_cgw_n  (:,:,jb),     & ! theta flux N-ward        (out)
-                     energy          = p_fld% energy_cgw  (:,:,jb),     & ! GW energy                (out)
-                     energy_p        = p_fld% energy_p_cgw(:,:,jb),     & ! GW potential energy      (out)
-                     waction         = p_fld% action_cgw  (:,:,jb)      ) ! GW action                (out)
+                     vtflux          = vtflux_cgw(:,:)                  ) ! v theta flux             (out)
     END IF
 
     ! wave2grid for background GWs
@@ -672,50 +790,26 @@ SUBROUTINE gwdrag_msgwam ( dt_call,                   & ! input
                      gammash2_half   = gammash2_half(:,:,jb),           & ! inverse pinc scale height(in)
                      fc2             = fc2(:,jb),                       & ! Coriolis parameter**2    (in)
                      lcalc_flux_4dir = lcalc_flux_4dir_bg(jg),          & ! flag to calc. 4-fluxes   (in)
-                     u               = u(:, :, jb),                      & ! zonal wind (full levels)      (in)
-                     v               = v(:, :, jb),                      & ! meridional wind (full levels) (in)
-                     apmflux         = p_fld% apmfl_mgm   (:,:,jb),     & ! absolute p-momentum flux (out)
-                     amflux          = p_fld% amfl_mgm    (:,:,jb),     & ! absolute momentum flux   (out)
+                     u               = u(:, :, jb),                     & ! zonal wind (full levels)      (in)
+                     v               = v(:, :, jb),                     & ! meridional wind (full levels) (in)
                      uuflux          = p_fld% uufl_mgm    (:,:,jb),     & ! uu mometum flux          (out)
                      uvflux          = p_fld% uvfl_mgm    (:,:,jb),     & ! uv mometum flux          (out)
                      uwflux          = p_fld% uwfl_mgm    (:,:,jb),     & ! uw mometum flux          (out)
                      vvflux          = p_fld% vvfl_mgm    (:,:,jb),     & ! vv mometum flux          (out)
                      vwflux          = p_fld% vwfl_mgm    (:,:,jb),     & ! vw mometum flux          (out)
-                     mflux_e         = p_fld% mfl_mgm_e   (:,:,jb),     & ! mometum flux E-ward      (out)
-                     mflux_w         = p_fld% mfl_mgm_w   (:,:,jb),     & ! mometum flux W-ward      (out)
-                     mflux_s         = p_fld% mfl_mgm_s   (:,:,jb),     & ! mometum flux S-ward      (out)
-                     mflux_n         = p_fld% mfl_mgm_n   (:,:,jb),     & ! mometum flux N-ward      (out)
-                     waflux_u        = p_fld% wafl_mgm_u  (:,:,jb),     & ! wave action flux U-ward  (out)
-                     waflux_d        = p_fld% wafl_mgm_d  (:,:,jb),     & ! wave action flux D-ward  (out)
-                     waflux_e        = p_fld% wafl_mgm_e  (:,:,jb),     & ! wave action flux E-ward  (out)
-                     waflux_w        = p_fld% wafl_mgm_w  (:,:,jb),     & ! wave action flux W-ward  (out)
-                     waflux_s        = p_fld% wafl_mgm_s  (:,:,jb),     & ! wave action flux S-ward  (out)
-                     waflux_n        = p_fld% wafl_mgm_n  (:,:,jb),     & ! wave action flux N-ward  (out)
-                     aptflux         = p_fld% aptfl_mgm   (:,:,jb),     & ! absolute pot temp flux   (out)
+                     uupflux         = p_fld% uupfl_mgm   (:,:,jb),     & ! uu pseudo mometum flux   (out)
+                     uvpflux         = p_fld% uvpfl_mgm   (:,:,jb),     & ! uv pseudo mometum flux   (out)
+                     uwpflux         = p_fld% uwpfl_mgm   (:,:,jb),     & ! uw pseudo mometum flux   (out)
+                     vvpflux         = p_fld% vvpfl_mgm   (:,:,jb),     & ! vv pseudo mometum flux   (out)
+                     vwpflux         = p_fld% vwpfl_mgm   (:,:,jb),     & ! vw pseudo mometum flux   (out)
                      utflux          = p_fld% utfl_mgm    (:,:,jb),     & ! u theta flux             (out)
-                     vtflux          = p_fld% vtfl_mgm    (:,:,jb),     & ! v theta flux             (out)
-                     ptflux_e        = p_fld% ptfl_mgm_e  (:,:,jb),     & ! theta flux E-ward        (out)
-                     ptflux_w        = p_fld% ptfl_mgm_w  (:,:,jb),     & ! theta flux W-ward        (out)
-                     ptflux_s        = p_fld% ptfl_mgm_s  (:,:,jb),     & ! theta flux S-ward        (out)
-                     ptflux_n        = p_fld% ptfl_mgm_n  (:,:,jb),     & ! theta flux N-ward        (out)
-                     energy          = p_fld% energy_mgm  (:,:,jb),     & ! GW energy                (out)
-                     energy_p        = p_fld% energy_p_mgm(:,:,jb),     & ! GW potential energy      (out)
-                     waction         = p_fld% action_mgm  (:,:,jb)      ) ! GW action                (out)
+                     vtflux          = p_fld% vtfl_mgm    (:,:,jb)      ) ! v theta flux             (out)
     ELSE
-      p_fld% apmfl_mgm(:,:,jb) = 0._wp ; p_fld% amfl_mgm(:,:,jb) = 0._wp
-      p_fld% aptfl_mgm(:,:,jb) = 0._wp
-      p_fld% uufl_mgm(:,:,jb) = 0._wp   ; p_fld% uvfl_mgm(:,:,jb) = 0._wp ; p_fld% uwfl_mgm(:,:,jb) = 0._wp
-      p_fld% vvfl_mgm(:,:,jb) = 0._wp ; p_fld% vwfl_mgm(:,:,jb) = 0._wp
-      p_fld% wafl_mgm_u(:,:,jb) = 0._wp ; p_fld% wafl_mgm_d(:,:,jb) = 0._wp
-      p_fld% wafl_mgm_e(:,:,jb) = 0._wp ; p_fld% wafl_mgm_w(:,:,jb) = 0._wp
-      p_fld% wafl_mgm_n(:,:,jb) = 0._wp ; p_fld% wafl_mgm_s(:,:,jb) = 0._wp
-      p_fld% mfl_mgm_e(:,:,jb) = 0._wp  ; p_fld% mfl_mgm_w(:,:,jb) = 0._wp
-      p_fld% mfl_mgm_n(:,:,jb) = 0._wp  ; p_fld% mfl_mgm_s(:,:,jb) = 0._wp
+      p_fld% uufl_mgm(:,:,jb) = 0._wp   ; p_fld% uvfl_mgm(:,:,jb) = 0._wp  ; p_fld% uwfl_mgm(:,:,jb) = 0._wp
+      p_fld% vvfl_mgm(:,:,jb) = 0._wp   ; p_fld% vwfl_mgm(:,:,jb) = 0._wp
+      p_fld% uupfl_mgm(:,:,jb) = 0._wp  ; p_fld% uvpfl_mgm(:,:,jb) = 0._wp ; p_fld% uwpfl_mgm(:,:,jb) = 0._wp
+      p_fld% vvpfl_mgm(:,:,jb) = 0._wp  ; p_fld% vwpfl_mgm(:,:,jb) = 0._wp
       p_fld% utfl_mgm(:,:,jb) = 0._wp   ; p_fld% vtfl_mgm(:,:,jb) = 0._wp
-      p_fld% ptfl_mgm_e(:,:,jb) = 0._wp ; p_fld% ptfl_mgm_w(:,:,jb) = 0._wp
-      p_fld% ptfl_mgm_n(:,:,jb) = 0._wp ; p_fld% ptfl_mgm_s(:,:,jb) = 0._wp
-      p_fld% energy_mgm(:,:,jb) = 0._wp ; p_fld% energy_p_mgm(:,:,jb) = 0._wp
-      p_fld% action_mgm(:,:,jb) = 0._wp
     END IF
 
     IF ( gws_conv_config%n_source(jg) > 0 ) THEN
@@ -725,14 +819,153 @@ SUBROUTINE gwdrag_msgwam ( dt_call,                   & ! input
       p_fld% uwfl_mgm(:,:,jb) = p_fld% uwfl_mgm(:,:,jb) + uwflux_cgw(:,:)
       p_fld% vvfl_mgm(:,:,jb) = p_fld% vvfl_mgm(:,:,jb) + vvflux_cgw(:,:)
       p_fld% vwfl_mgm(:,:,jb) = p_fld% vwfl_mgm(:,:,jb) + vwflux_cgw(:,:)
+      p_fld% uupfl_mgm(:,:,jb) = p_fld% uupfl_mgm(:,:,jb) + uupflux_cgw(:,:)
+      p_fld% uvpfl_mgm(:,:,jb) = p_fld% uvpfl_mgm(:,:,jb) + uvpflux_cgw(:,:)
+      p_fld% uwpfl_mgm(:,:,jb) = p_fld% uwpfl_mgm(:,:,jb) + uwpflux_cgw(:,:)
+      p_fld% vvpfl_mgm(:,:,jb) = p_fld% vvpfl_mgm(:,:,jb) + vvpflux_cgw(:,:)
+      p_fld% vwpfl_mgm(:,:,jb) = p_fld% vwpfl_mgm(:,:,jb) + vwpflux_cgw(:,:)
       p_fld% utfl_mgm(:,:,jb) = p_fld% utfl_mgm(:,:,jb) + utflux_cgw(:,:)
       p_fld% vtfl_mgm(:,:,jb) = p_fld% vtfl_mgm(:,:,jb) + vtflux_cgw(:,:)
-      p_fld% energy_mgm(:,:,jb) = p_fld% energy_mgm(:,:,jb)  &   ! currently not used
-        &                       + p_fld% energy_cgw(:,:,jb)
     END IF
 
     IF (timers_level > 4) CALL timer_stop(timer_msgwam_wave2grid)
 
+    !============================ DIAGNOSTICS ===============================
+    ! Project quantities of the Lagrangian ray volumes to the Eulerian grid 
+    ! and calculate everything that the model does not necessarily require.
+    ! The projection is done separately for GWs from the background and 
+    ! from the convective sources
+    !======================================================================
+
+    IF (nrays_add_bg(jg) /= 0) THEN
+      call project_diagnostics(nlev           = nlev,                             & ! no. of full levels       (in)
+                               i_startidx     = i_startidx,                       & ! first index of the block (in)
+                               i_endidx       = i_endidx,                         & ! last index of the block  (in)
+                               jray_start     = jray_offset_bg(jg)+1,             & ! first index for ray      (in)
+                               jray_end       = jray_offset_bg(jg)+nrays_bg(jg),  & ! last index for ray       (in)
+                               z              = p_metrics%z_mc(:,:,jb),           & ! full level heights       (in)
+                               zhalf          = p_metrics%z_ifc(:,:,jb),          & ! half level heights       (in)
+                               cellarea       = p_patch%cells%area(:,jb),         & ! area of grid cell        (in)
+                               jkmin_full     = p_ray(jg)%jk_full_rtop(:,:,jb),   & ! jk closest to ray-v top  (in)
+                               jkmax_full     = p_ray(jg)%jk_full_rbot(:,:,jb),   & ! jk closest to ray-v bot  (in)
+                               jkmin_half     = p_ray(jg)%jk_half_rtop(:,:,jb),   & ! jk closest to ray-v top  (in)
+                               jkmax_half     = p_ray(jg)%jk_half_rbot(:,:,jb),   & ! jk closest to ray-v bot  (in)
+                               iexist         = p_ray(jg)%iexist(:,:,jb),         & ! existence of ray         (in)
+                               jk_active      = p_ray(jg)%jk_active(:,:,jb),      & ! launch level index       (in)
+                               specid         = p_ray(jg)%specid(:,:,jb),         & ! spectral id of rays      (in)
+                               zray           = p_ray(jg)%z(:,:,jb),              & ! position                 (in)
+                               dzray          = p_ray(jg)%dz(:,:,jb),             & ! size in z-dir            (in)
+                               coslatray      = p_ray(jg)%coslat(:,:,jb),         & ! cosine latitude          (in)
+                               dlatray        = p_ray(jg)%dlat(:,:,jb),           & ! meridional extent        (in)
+                               dlonray        = p_ray(jg)%dlon(:,:,jb),           & ! zonal extent             (in)
+                               kray           = p_ray(jg)%k(:,:,jb),              & ! horiz (lon) wavenumber   (in)
+                               dkray          = p_ray(jg)%dk(:,:,jb),             & ! size in k-dir            (in)
+                               lray           = p_ray(jg)%l(:,:,jb),              & ! horiz (lat) wavenumber   (in)
+                               dlray          = p_ray(jg)%dl(:,:,jb),             & ! size in l-dir            (in)
+                               mray           = p_ray(jg)%m(:,:,jb),              & ! vertical wavenumber      (in)
+                               dmray          = p_ray(jg)%dm(:,:,jb),             & ! size in m-dir            (in)
+                               dens           = p_ray(jg)%wadens(:,:,jb),         & ! wave action density      (in)
+                               bvf2_full      = bvf2_full(:,:,jb),                & ! Brunt-Väisala freq**2    (in)
+                               bvf2_half      = bvf2_half(:,:,jb),                & ! Brunt-Väisala freq**2    (in)
+                               gammash2_full  = gammash2_full(:,:,jb),            & ! inverse pinc scale height(in)
+                               gammash2_half  = gammash2_half(:,:,jb),            & ! inverse pinc scale height(in)
+                               fc             = p_patch%cells%f_c(:,jb),          & ! Coriolis parameter       (in)
+                               fc2            = fc2(:,jb),                        & ! Coriolis parameter**2    (in)
+                               u              = u(:, :, jb),                      & ! zonal wind (full levels)      (in)
+                               v              = v(:, :, jb),                      & ! meridional wind (full levels) (in)
+                               theta          = theta(:,:,jb),                    & ! potential temperature    (in)
+                               pmflux_e       = p_fld% mfl_mgm_e   (:,:,jb),      & ! pseudo mometum flux E-ward      (out)
+                               pmflux_w       = p_fld% mfl_mgm_w   (:,:,jb),      & ! pseudo mometum flux W-ward      (out)
+                               pmflux_s       = p_fld% mfl_mgm_s   (:,:,jb),      & ! pseudo mometum flux S-ward      (out)
+                               pmflux_n       = p_fld% mfl_mgm_n   (:,:,jb),      & ! pseudo mometum flux N-ward      (out)
+                               apmflux        = p_fld% apmfl_mgm   (:,:,jb),      & ! absolute p-momentum flux (out)
+                               mflux_e        = p_fld% mfl_mgm_e   (:,:,jb),      & ! mometum flux E-ward      (out)
+                               mflux_w        = p_fld% mfl_mgm_w   (:,:,jb),      & ! mometum flux W-ward      (out)
+                               mflux_s        = p_fld% mfl_mgm_s   (:,:,jb),      & ! mometum flux S-ward      (out)
+                               mflux_n        = p_fld% mfl_mgm_n   (:,:,jb),      & ! mometum flux N-ward      (out)
+                               amflux         = p_fld% amfl_mgm    (:,:,jb),      & ! absolute momentum flux   (out)
+                               waflux_u       = p_fld% wafl_mgm_u  (:,:,jb),      & ! wave action flux U-ward  (out)
+                               waflux_d       = p_fld% wafl_mgm_d  (:,:,jb),      & ! wave action flux D-ward  (out)
+                               waflux_e       = p_fld% wafl_mgm_e  (:,:,jb),      & ! wave action flux E-ward  (out)
+                               waflux_w       = p_fld% wafl_mgm_w  (:,:,jb),      & ! wave action flux W-ward  (out)
+                               waflux_s       = p_fld% wafl_mgm_s  (:,:,jb),      & ! wave action flux S-ward  (out)
+                               waflux_n       = p_fld% wafl_mgm_n  (:,:,jb),      & ! wave action flux N-ward  (out)
+                               ptflux_e       = p_fld% ptfl_mgm_e  (:,:,jb),      & ! theta flux E-ward        (out)
+                               ptflux_w       = p_fld% ptfl_mgm_w  (:,:,jb),      & ! theta flux W-ward        (out)
+                               ptflux_s       = p_fld% ptfl_mgm_s  (:,:,jb),      & ! theta flux S-ward        (out)
+                               ptflux_n       = p_fld% ptfl_mgm_n  (:,:,jb),      & ! theta flux N-ward        (out)
+                               aptflux        = p_fld% aptfl_mgm   (:,:,jb),      & ! absolute pot temp flux   (out)
+                               energy         = p_fld% energy_mgm  (:,:,jb),      & ! GW energy                (out)
+                               energy_p       = p_fld% energy_p_mgm(:,:,jb),      & ! GW potential energy      (out)
+                               waction        = p_fld% action_mgm_3(:,:,jb),      & ! GW action                (out)
+                               active_rays    = p_fld% active_rays_mgm(:,jb)      ) ! number of rays per cell  (out)
+                             
+    END IF
+
+    IF ( gws_conv_config%n_source(jg) > 0 ) THEN
+      call project_diagnostics(nlev           = nlev,                             & ! no. of full levels       (in)
+                               i_startidx     = i_startidx,                       & ! first index of the block (in)
+                               i_endidx       = i_endidx,                         & ! last index of the block  (in)
+                               jray_start     = jray_offset_cv(jg)+1,             & ! first index for ray      (in)
+                               jray_end       = jray_offset_cv(jg)+nrays_cv(jg),  & ! last index for ray       (in)
+                               z              = p_metrics%z_mc(:,:,jb),           & ! full level heights       (in)
+                               zhalf          = p_metrics%z_ifc(:,:,jb),          & ! half level heights       (in)
+                               cellarea       = p_patch%cells%area(:,jb),         & ! area of grid cell        (in)
+                               jkmin_full     = p_ray(jg)%jk_full_rtop(:,:,jb),   & ! jk closest to ray-v top  (in)
+                               jkmax_full     = p_ray(jg)%jk_full_rbot(:,:,jb),   & ! jk closest to ray-v bot  (in)
+                               jkmin_half     = p_ray(jg)%jk_half_rtop(:,:,jb),   & ! jk closest to ray-v top  (in)
+                               jkmax_half     = p_ray(jg)%jk_half_rbot(:,:,jb),   & ! jk closest to ray-v bot  (in)
+                               iexist         = p_ray(jg)%iexist(:,:,jb),         & ! existence of ray         (in)
+                               jk_active      = p_ray(jg)%jk_active(:,:,jb),      & ! launch level index       (in)
+                               specid         = p_ray(jg)%specid(:,:,jb),         & ! spectral id of rays      (in)
+                               zray           = p_ray(jg)%z(:,:,jb),              & ! position                 (in)
+                               dzray          = p_ray(jg)%dz(:,:,jb),             & ! size in z-dir            (in)
+                               coslatray      = p_ray(jg)%coslat(:,:,jb),         & ! cosine latitude          (in)
+                               dlatray        = p_ray(jg)%dlat(:,:,jb),           & ! meridional extent        (in)
+                               dlonray        = p_ray(jg)%dlon(:,:,jb),           & ! zonal extent             (in)
+                               kray           = p_ray(jg)%k(:,:,jb),              & ! horiz (lon) wavenumber   (in)
+                               dkray          = p_ray(jg)%dk(:,:,jb),             & ! size in k-dir            (in)
+                               lray           = p_ray(jg)%l(:,:,jb),              & ! horiz (lat) wavenumber   (in)
+                               dlray          = p_ray(jg)%dl(:,:,jb),             & ! size in l-dir            (in)
+                               mray           = p_ray(jg)%m(:,:,jb),              & ! vertical wavenumber      (in)
+                               dmray          = p_ray(jg)%dm(:,:,jb),             & ! size in m-dir            (in)
+                               dens           = p_ray(jg)%wadens(:,:,jb),         & ! wave action density      (in)
+                               bvf2_full      = bvf2_full(:,:,jb),                & ! Brunt-Väisala freq**2    (in)
+                               bvf2_half      = bvf2_half(:,:,jb),                & ! Brunt-Väisala freq**2    (in)
+                               gammash2_full  = gammash2_full(:,:,jb),            & ! inverse pinc scale height(in)
+                               gammash2_half  = gammash2_half(:,:,jb),            & ! inverse pinc scale height(in)
+                               fc             = p_patch%cells%f_c(:,jb),          & ! Coriolis parameter       (in)
+                               fc2            = fc2(:,jb),                        & ! Coriolis parameter**2    (in)
+                               u              = u(:, :, jb),                      & ! zonal wind (full levels)      (in)
+                               v              = v(:, :, jb),                      & ! meridional wind (full levels) (in)
+                               theta          = theta(:,:,jb),                    & ! potential temperature    (in)
+                               pmflux_e       = p_fld% mfl_cgw_e   (:,:,jb),      & ! pseudo mometum flux E-ward      (out)
+                               pmflux_w       = p_fld% mfl_cgw_w   (:,:,jb),      & ! pseudo mometum flux W-ward      (out)
+                               pmflux_s       = p_fld% mfl_cgw_s   (:,:,jb),      & ! pseudo mometum flux S-ward      (out)
+                               pmflux_n       = p_fld% mfl_cgw_n   (:,:,jb),      & ! pseudo mometum flux N-ward      (out)
+                               apmflux        = p_fld% apmfl_cgw   (:,:,jb),      & ! absolute p-momentum flux (out)
+                               mflux_e        = p_fld% mfl_cgw_e   (:,:,jb),      & ! mometum flux E-ward      (out)
+                               mflux_w        = p_fld% mfl_cgw_w   (:,:,jb),      & ! mometum flux W-ward      (out)
+                               mflux_s        = p_fld% mfl_cgw_s   (:,:,jb),      & ! mometum flux S-ward      (out)
+                               mflux_n        = p_fld% mfl_cgw_n   (:,:,jb),      & ! mometum flux N-ward      (out)
+                               amflux         = p_fld% amfl_cgw    (:,:,jb),      & ! absolute momentum flux   (out)
+                               waflux_u       = p_fld% wafl_cgw_u  (:,:,jb),      & ! wave action flux U-ward  (out)
+                               waflux_d       = p_fld% wafl_cgw_d  (:,:,jb),      & ! wave action flux D-ward  (out)
+                               waflux_e       = p_fld% wafl_cgw_e  (:,:,jb),      & ! wave action flux E-ward  (out)
+                               waflux_w       = p_fld% wafl_cgw_w  (:,:,jb),      & ! wave action flux W-ward  (out)
+                               waflux_s       = p_fld% wafl_cgw_s  (:,:,jb),      & ! wave action flux S-ward  (out)
+                               waflux_n       = p_fld% wafl_cgw_n  (:,:,jb),      & ! wave action flux N-ward  (out)
+                               ptflux_e       = p_fld% ptfl_cgw_e  (:,:,jb),      & ! theta flux E-ward        (out)
+                               ptflux_w       = p_fld% ptfl_cgw_w  (:,:,jb),      & ! theta flux W-ward        (out)
+                               ptflux_s       = p_fld% ptfl_cgw_s  (:,:,jb),      & ! theta flux S-ward        (out)
+                               ptflux_n       = p_fld% ptfl_cgw_n  (:,:,jb),      & ! theta flux N-ward        (out)
+                               aptflux        = p_fld% aptfl_cgw   (:,:,jb),      & ! absolute pot temp flux   (out)
+                               energy         = p_fld% energy_cgw  (:,:,jb),      & ! GW energy                (out)
+                               energy_p       = p_fld% energy_p_cgw(:,:,jb),      & ! GW potential energy      (out)
+                               waction        = p_fld% action_cgw_3(:,:,jb),      & ! GW action                (out)       
+                               active_rays    = p_fld% active_rays_cgw(:,jb)      ) ! number of rays per cell  (out)
+
+    END IF
 
     !============================== DATOUT ================================
     ! Output profile of subgrid-scale GW quantities for specific lat,lon 
@@ -894,6 +1127,79 @@ SUBROUTINE gwdrag_msgwam ( dt_call,                   & ! input
 
     IF (timers_level > 4) CALL timer_stop(timer_msgwam_propagate_wave)
 
+    !======================== Diagnostics ==================================
+    ! WA diagnostic
+    !=======================================================================
+
+    CALL idx_rayedge( nlev,i_startidx,i_endidx,1,nrays(jg),& ! (in)
+                      p_metrics%z_mc     (:,:,jb),        & ! (in)
+                      p_metrics%z_ifc    (:,:,jb),        & ! (in)
+                      p_ray(jg)%iexist   (:,:,jb),        & ! (in)
+                      p_ray(jg)%specid   (:,:,jb),        & ! (in)
+                      p_ray(jg)%jk_active(:,:,jb),        & ! (in)
+                      p_ray(jg)%z        (:,:,jb),        & ! (in)
+                      p_ray(jg)%dz       (:,:,jb),        & ! (in)
+                      p_ray(jg)%jk_full_rtop(:,:,jb),     & ! (inout)
+                      p_ray(jg)%jk_full_rbot(:,:,jb),     & ! (inout)
+                      p_ray(jg)%jk_half_rtop(:,:,jb),     & ! (inout)
+                      p_ray(jg)%jk_half_rbot(:,:,jb)      ) ! (inout)
+
+    CALL project_action(nlev        = nlev,                             & !
+                        i_startidx  = i_startidx,                       & !
+                        i_endidx    = i_endidx,                         & !
+                        jray_start  = jray_offset_bg(jg)+1,             & !
+                        jray_end    = jray_offset_bg(jg)+nrays_bg(jg),  & !
+                        z           = p_metrics%z_mc(:,:,jb),           & !
+                        zhalf       = p_metrics%z_ifc(:,:,jb),          & !
+                        cellarea    = p_patch%cells%area(:,jb),         & !
+                        zray        = p_ray(jg)%z(:,:,jb),              & !
+                        dzray       = p_ray(jg)%dz(:,:,jb),             & !
+                        coslatray   = p_ray(jg)%coslat(:,:,jb),         & !
+                        dlatray     = p_ray(jg)%dlat(:,:,jb),           & !
+                        dlonray     = p_ray(jg)%dlon(:,:,jb),           & !
+                        dkray       = p_ray(jg)%dk(:,:,jb),             & !
+                        dlray       = p_ray(jg)%dl(:,:,jb),             & !
+                        dmray       = p_ray(jg)%dm(:,:,jb),             & !
+                        dens        = p_ray(jg)%wadens(:,:,jb),         & !
+                        iexist      = p_ray(jg)%iexist(:,:,jb),         & !
+                        specid      = p_ray(jg)%specid(:,:,jb),         & !
+                        jk_active   = p_ray(jg)%jk_active(:,:,jb),      & !
+                        jkmin_full  = p_ray(jg)%jk_full_rtop(:,:,jb),   & !
+                        jkmax_full  = p_ray(jg)%jk_full_rbot(:,:,jb),   & !
+                        jkmin_half  = p_ray(jg)%jk_half_rtop(:,:,jb),   & !
+                        jkmax_half  = p_ray(jg)%jk_half_rbot(:,:,jb),   & !
+                        action      = p_fld%action_mgm_4(:,:,jb),       & !
+                        diag        = 0,                                & !
+                        jg          = jg                                ) !
+
+    CALL project_action(nlev        = nlev,                             & !
+                        i_startidx  = i_startidx,                       & !
+                        i_endidx    = i_endidx,                         & !
+                        jray_start  = jray_offset_cv(jg)+1,             & !
+                        jray_end    = jray_offset_cv(jg)+nrays_cv(jg),  & !
+                        z           = p_metrics%z_mc(:,:,jb),           & !
+                        zhalf       = p_metrics%z_ifc(:,:,jb),          & !
+                        cellarea    = p_patch%cells%area(:,jb),         & !
+                        zray        = p_ray(jg)%z(:,:,jb),              & !
+                        dzray       = p_ray(jg)%dz(:,:,jb),             & !
+                        coslatray   = p_ray(jg)%coslat(:,:,jb),         & !
+                        dlatray     = p_ray(jg)%dlat(:,:,jb),           & !
+                        dlonray     = p_ray(jg)%dlon(:,:,jb),           & !
+                        dkray       = p_ray(jg)%dk(:,:,jb),             & !
+                        dlray       = p_ray(jg)%dl(:,:,jb),             & !
+                        dmray       = p_ray(jg)%dm(:,:,jb),             & !
+                        dens        = p_ray(jg)%wadens(:,:,jb),         & !
+                        iexist      = p_ray(jg)%iexist(:,:,jb),         & !
+                        specid      = p_ray(jg)%specid(:,:,jb),         & !
+                        jk_active   = p_ray(jg)%jk_active(:,:,jb),      & !
+                        jkmin_full  = p_ray(jg)%jk_full_rtop(:,:,jb),   & !
+                        jkmax_full  = p_ray(jg)%jk_full_rbot(:,:,jb),   & !
+                        jkmin_half  = p_ray(jg)%jk_half_rtop(:,:,jb),   & !
+                        jkmax_half  = p_ray(jg)%jk_half_rbot(:,:,jb),   & !
+                        action     = p_fld%action_cgw_4(:,:,jb),        & !
+                        diag        = 0,                                & !
+                        jg          = jg                                ) !
+
   ENDDO ! jb
 
 !$OMP END DO
@@ -914,6 +1220,8 @@ SUBROUTINE gwdrag_msgwam ( dt_call,                   & ! input
     DO iter_sm = 1, ABS(nhsmooth)
       CALL sync_patch_array_mult(SYNC_C, p_patch, 5, p_fld% uwfl_mgm, p_fld% vwfl_mgm,  &
         &                           p_fld% uufl_mgm, p_fld% uvfl_mgm, p_fld% vvfl_mgm)
+      CALL sync_patch_array_mult(SYNC_C, p_patch, 5, p_fld% uwpfl_mgm, p_fld% vwpfl_mgm,  &
+        &                          p_fld% uupfl_mgm, p_fld% uvpfl_mgm, p_fld% vvpfl_mgm)
       CALL sync_patch_array_mult(SYNC_C, p_patch, 2, p_fld% utfl_mgm, p_fld% vtfl_mgm)
       !
       CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlevp1,p_fld%uwfl_mgm)
@@ -921,6 +1229,11 @@ SUBROUTINE gwdrag_msgwam ( dt_call,                   & ! input
       CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,  p_fld%uufl_mgm)
       CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,  p_fld%uvfl_mgm)
       CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,  p_fld%vvfl_mgm)
+      CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlevp1,p_fld%uwpfl_mgm)
+      CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlevp1,p_fld%vwpfl_mgm)
+      CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,  p_fld%uupfl_mgm)
+      CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,  p_fld%uvpfl_mgm)
+      CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,  p_fld%vvpfl_mgm)
       CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,  p_fld%utfl_mgm)
       CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,  p_fld%vtfl_mgm)
     ENDDO
@@ -934,20 +1247,32 @@ SUBROUTINE gwdrag_msgwam ( dt_call,                   & ! input
         &                                            p_fld% aptfl_mgm    , &
         &                                            p_fld% energy_mgm   , &
         &                                            p_fld% energy_p_mgm )
-      CALL sync_patch_array_mult(SYNC_C, p_patch, 1, p_fld% action_mgm   )
+      CALL sync_patch_array_mult(SYNC_C, p_patch, 5, p_fld% action_mgm_1 , &
+                                                     p_fld% action_mgm_2 , &
+                                                     p_fld% action_mgm_3 , &
+                                                     p_fld% action_mgm_4 , &
+                                                     p_fld% action_mgm_5 )
       !
       CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlevp1,p_fld%apmfl_mgm)
       CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,  p_fld%amfl_mgm)
       CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,  p_fld%aptfl_mgm)
       CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,  p_fld%energy_mgm)
       CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,  p_fld%energy_p_mgm)
-      CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,  p_fld%action_mgm)
+      CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,  p_fld%action_mgm_1)
+      CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,  p_fld%action_mgm_2)
+      CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,  p_fld%action_mgm_3)
+      CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,  p_fld%action_mgm_4)
+      CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,  p_fld%action_mgm_5)
 
       IF ( lcalc_flux_4dir_bg(jg) ) THEN
         CALL sync_patch_array_mult(SYNC_C, p_patch, 4, p_fld% mfl_mgm_e  , &
           &                                            p_fld% mfl_mgm_w  , &
           &                                            p_fld% mfl_mgm_n  , &
           &                                            p_fld% mfl_mgm_s  )
+        CALL sync_patch_array_mult(SYNC_C, p_patch, 4, p_fld% pmfl_mgm_e  , &
+          &                                            p_fld% pmfl_mgm_w  , &
+          &                                            p_fld% pmfl_mgm_n  , &
+          &                                            p_fld% pmfl_mgm_s  )
         CALL sync_patch_array_mult(SYNC_C, p_patch, 4, p_fld% ptfl_mgm_e , &
           &                                            p_fld% ptfl_mgm_w , &
           &                                            p_fld% ptfl_mgm_n , &
@@ -957,6 +1282,10 @@ SUBROUTINE gwdrag_msgwam ( dt_call,                   & ! input
         CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,p_fld%mfl_mgm_w)
         CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,p_fld%mfl_mgm_n)
         CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,p_fld%mfl_mgm_s)
+        CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,p_fld%pmfl_mgm_e)
+        CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,p_fld%pmfl_mgm_w)
+        CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,p_fld%pmfl_mgm_n)
+        CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,p_fld%pmfl_mgm_s)
         CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,p_fld%ptfl_mgm_e)
         CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,p_fld%ptfl_mgm_w)
         CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,p_fld%ptfl_mgm_n)
@@ -970,20 +1299,32 @@ SUBROUTINE gwdrag_msgwam ( dt_call,                   & ! input
           &                                            p_fld% aptfl_cgw    , &
           &                                            p_fld% energy_cgw   , &
           &                                            p_fld% energy_p_cgw )
-        CALL sync_patch_array_mult(SYNC_C, p_patch, 1, p_fld% action_cgw   )
+        CALL sync_patch_array_mult(SYNC_C, p_patch, 5, p_fld% action_cgw_1 , &
+                                                       p_fld% action_cgw_2 , &
+                                                       p_fld% action_cgw_3 , &
+                                                       p_fld% action_cgw_4 , &
+                                                       p_fld% action_cgw_5 )
         !
         CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlevp1,p_fld%apmfl_cgw)
         CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,p_fld%amfl_cgw)
         CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,p_fld%aptfl_cgw)
         CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,p_fld%energy_cgw)
         CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,p_fld%energy_p_cgw)
-        CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,p_fld%action_cgw)
+        CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,p_fld%action_cgw_1)
+        CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,p_fld%action_cgw_2)
+        CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,p_fld%action_cgw_3)
+        CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,p_fld%action_cgw_4)
+        CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,p_fld%action_cgw_5)
 
         IF ( lcalc_flux_4dir_cv(jg) ) THEN
           CALL sync_patch_array_mult(SYNC_C, p_patch, 4, p_fld% mfl_cgw_e  , &
             &                                            p_fld% mfl_cgw_w  , &
             &                                            p_fld% mfl_cgw_n  , &
             &                                            p_fld% mfl_cgw_s  )
+          CALL sync_patch_array_mult(SYNC_C, p_patch, 4, p_fld% pmfl_cgw_e  , &
+            &                                            p_fld% pmfl_cgw_w  , &
+            &                                            p_fld% pmfl_cgw_n  , &
+            &                                            p_fld% pmfl_cgw_s  )
           CALL sync_patch_array_mult(SYNC_C, p_patch, 4, p_fld% ptfl_cgw_e , &
             &                                            p_fld% ptfl_cgw_w , &
             &                                            p_fld% ptfl_cgw_n , &
@@ -993,6 +1334,10 @@ SUBROUTINE gwdrag_msgwam ( dt_call,                   & ! input
           CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,p_fld%mfl_cgw_w)
           CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,p_fld%mfl_cgw_n)
           CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,p_fld%mfl_cgw_s)
+          CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,p_fld%pmfl_cgw_e)
+          CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,p_fld%pmfl_cgw_w)
+          CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,p_fld%pmfl_cgw_n)
+          CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,p_fld%pmfl_cgw_s)
           CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,p_fld%ptfl_cgw_e)
           CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,p_fld%ptfl_cgw_w)
           CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,p_fld%ptfl_cgw_n)
@@ -1087,6 +1432,85 @@ SUBROUTINE gwdrag_msgwam ( dt_call,                   & ! input
     IF (timers_level > 4) CALL timer_stop(timer_msgwam_split_merge)
   END IF
 
+  DO jb = i_startblk, i_endblk
+
+    CALL get_indices_c(p_patch, jb, i_startblk, i_endblk, &
+          & i_startidx, i_endidx, rl_start, rl_end)
+
+    !======================== Diagnostics ==================================
+    ! WA diagnostic
+    !=======================================================================
+
+    CALL idx_rayedge( nlev,i_startidx,i_endidx,1,nrays(jg),& ! (in)
+                      p_metrics%z_mc     (:,:,jb),        & ! (in)
+                      p_metrics%z_ifc    (:,:,jb),        & ! (in)
+                      p_ray(jg)%iexist   (:,:,jb),        & ! (in)
+                      p_ray(jg)%specid   (:,:,jb),        & ! (in)
+                      p_ray(jg)%jk_active(:,:,jb),        & ! (in)
+                      p_ray(jg)%z        (:,:,jb),        & ! (in)
+                      p_ray(jg)%dz       (:,:,jb),        & ! (in)
+                      p_ray(jg)%jk_full_rtop(:,:,jb),     & ! (inout)
+                      p_ray(jg)%jk_full_rbot(:,:,jb),     & ! (inout)
+                      p_ray(jg)%jk_half_rtop(:,:,jb),     & ! (inout)
+                      p_ray(jg)%jk_half_rbot(:,:,jb)      ) ! (inout)
+
+    CALL project_action(nlev        = nlev,                             & !
+                        i_startidx  = i_startidx,                       & !
+                        i_endidx    = i_endidx,                         & !
+                        jray_start  = jray_offset_bg(jg)+1,             & !
+                        jray_end    = jray_offset_bg(jg)+nrays_bg(jg),  & !
+                        z           = p_metrics%z_mc(:,:,jb),           & !
+                        zhalf       = p_metrics%z_ifc(:,:,jb),          & !
+                        cellarea    = p_patch%cells%area(:,jb),         & !
+                        zray        = p_ray(jg)%z(:,:,jb),              & !
+                        dzray       = p_ray(jg)%dz(:,:,jb),             & !
+                        coslatray   = p_ray(jg)%coslat(:,:,jb),         & !
+                        dlatray     = p_ray(jg)%dlat(:,:,jb),           & !
+                        dlonray     = p_ray(jg)%dlon(:,:,jb),           & !
+                        dkray       = p_ray(jg)%dk(:,:,jb),             & !
+                        dlray       = p_ray(jg)%dl(:,:,jb),             & !
+                        dmray       = p_ray(jg)%dm(:,:,jb),             & !
+                        dens        = p_ray(jg)%wadens(:,:,jb),         & !
+                        iexist      = p_ray(jg)%iexist(:,:,jb),         & !
+                        specid      = p_ray(jg)%specid(:,:,jb),         & !
+                        jk_active   = p_ray(jg)%jk_active(:,:,jb),      & !
+                        jkmin_full  = p_ray(jg)%jk_full_rtop(:,:,jb),   & !
+                        jkmax_full  = p_ray(jg)%jk_full_rbot(:,:,jb),   & !
+                        jkmin_half  = p_ray(jg)%jk_half_rtop(:,:,jb),   & !
+                        jkmax_half  = p_ray(jg)%jk_half_rbot(:,:,jb),   & !
+                        action      = p_fld%action_mgm_5(:,:,jb),       & !
+                        diag        = 0,                                & !
+                        jg          = jg                                ) !
+
+    CALL project_action(nlev        = nlev,                             & !
+                        i_startidx  = i_startidx,                       & !
+                        i_endidx    = i_endidx,                         & !
+                        jray_start  = jray_offset_cv(jg)+1,             & !
+                        jray_end    = jray_offset_cv(jg)+nrays_cv(jg),  & !
+                        z           = p_metrics%z_mc(:,:,jb),           & !
+                        zhalf       = p_metrics%z_ifc(:,:,jb),          & !
+                        cellarea    = p_patch%cells%area(:,jb),         & !
+                        zray        = p_ray(jg)%z(:,:,jb),              & !
+                        dzray       = p_ray(jg)%dz(:,:,jb),             & !
+                        coslatray   = p_ray(jg)%coslat(:,:,jb),         & !
+                        dlatray     = p_ray(jg)%dlat(:,:,jb),           & !
+                        dlonray     = p_ray(jg)%dlon(:,:,jb),           & !
+                        dkray       = p_ray(jg)%dk(:,:,jb),             & !
+                        dlray       = p_ray(jg)%dl(:,:,jb),             & !
+                        dmray       = p_ray(jg)%dm(:,:,jb),             & !
+                        dens        = p_ray(jg)%wadens(:,:,jb),         & !
+                        iexist      = p_ray(jg)%iexist(:,:,jb),         & !
+                        specid      = p_ray(jg)%specid(:,:,jb),         & !
+                        jk_active   = p_ray(jg)%jk_active(:,:,jb),      & !
+                        jkmin_full  = p_ray(jg)%jk_full_rtop(:,:,jb),   & !
+                        jkmax_full  = p_ray(jg)%jk_full_rbot(:,:,jb),   & !
+                        jkmin_half  = p_ray(jg)%jk_half_rtop(:,:,jb),   & !
+                        jkmax_half  = p_ray(jg)%jk_half_rbot(:,:,jb),   & !
+                        action      = p_fld%action_cgw_5(:,:,jb),       & !
+                        diag        = 0,                                & !
+                        jg          = jg                                ) !
+
+  ENDDO  ! jb loop for diagnostic
 
   !======================== RE-GRID GW FIELD ============================
   ! ...
@@ -1103,6 +1527,18 @@ SUBROUTINE gwdrag_msgwam ( dt_call,                   & ! input
     !IF (timers_level > 4) CALL timer_stop(timer_msgwam_regrid_wave)
   END IF
 #endif
+
+  CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev, p_fld%action_mgm_1)
+  CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev, p_fld%action_mgm_2)
+  CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev, p_fld%action_mgm_3)
+  CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev, p_fld%action_mgm_4)
+  CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev, p_fld%action_mgm_5)
+
+  CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev, p_fld%action_cgw_1)
+  CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev, p_fld%action_cgw_2)
+  CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev, p_fld%action_cgw_3)
+  CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev, p_fld%action_cgw_4)
+  CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev, p_fld%action_cgw_5)
 
   !======================== TENDENCY LIMITER ============================
   ! Tendency limiter to stabilize high-top runs. This limiter is taken 
@@ -1141,6 +1577,10 @@ SUBROUTINE gwdrag_msgwam ( dt_call,                   & ! input
         &                           p_fld%ddt_u_gwd_mgm(:,:,jb)))
       p_fld%ddt_v_gwd_mgm(:,:,jb) = MAX(-lim_tend_tmp, MIN(lim_tend_tmp,  &
         &                           p_fld%ddt_v_gwd_mgm(:,:,jb)))
+      p_fld%ddt_u_gwd_pmom_mgm(:,:,jb) = MAX(-lim_tend_tmp, MIN(lim_tend_tmp,  &
+        &                                p_fld%ddt_u_gwd_pmom_mgm(:,:,jb)))
+      p_fld%ddt_v_gwd_pmom_mgm(:,:,jb) = MAX(-lim_tend_tmp, MIN(lim_tend_tmp,  &
+        &                                p_fld%ddt_v_gwd_pmom_mgm(:,:,jb)))
 
     ENDDO ! jb
 !$OMP END DO
@@ -3409,17 +3849,15 @@ END SUBROUTINE saturation
 !!
 !!-------------------------------------------------------------------------
 !!
-SUBROUTINE wave2grid(nlev,i_startidx,i_endidx,jray_start,jray_end,z,zhalf,fc,cellarea, &
-                     zray,dzray, coslatray, dlatray, dlonray, &
-                     kray,dkray,lray,dlray,mray,dmray,dens,iexist,specid,jk_active,&
-                     jkmin_full,jkmax_full,jkmin_half,jkmax_half,theta,&
-                     bvf2_full,bvf2_half,gammash2_full,gammash2_half,fc2,lcalc_flux_4dir,&
-                     u, v, apmflux,amflux,uuflux,uvflux,uwflux,vvflux,vwflux,&
-                     waflux_u, waflux_d, waflux_e, waflux_w, waflux_s, waflux_n, &
-                     mflux_e,mflux_w,mflux_n,mflux_s,&
-                     aptflux,utflux,vtflux,&
-                     ptflux_e,ptflux_w,ptflux_s,ptflux_n,&
-                     energy,energy_p,waction)
+SUBROUTINE wave2grid(nlev, i_startidx, i_endidx, jray_start, jray_end,                        &
+                     z, zhalf, cellarea, fc, fc2, lcalc_flux_4dir,                            &
+                     theta, u, v,                                                             &
+                     bvf2_full, bvf2_half, gammash2_full, gammash2_half,                      &
+                     zray, dzray, coslatray, dlatray, dlonray,                                &
+                     kray, dkray, lray, dlray, mray, dmray, dens, iexist, specid, jk_active,  &
+                     jkmin_full, jkmax_full, jkmin_half, jkmax_half,                          &
+                     uupflux, uvpflux, uwpflux, vvpflux, vwpflux,                             &
+                     uuflux, uvflux, uwflux, vvflux, vwflux, utflux, vtflux)
   INTEGER,              INTENT(IN)  :: nlev
   INTEGER,              INTENT(IN)  :: i_startidx ! first index of the block
   INTEGER,              INTENT(IN)  :: i_endidx   ! last index of the block
@@ -3449,33 +3887,18 @@ SUBROUTINE wave2grid(nlev,i_startidx,i_endidx,jray_start,jray_end,z,zhalf,fc,cel
   LOGICAL,              INTENT(IN)  :: lcalc_flux_4dir
   REAL(wp),             INTENT(IN)  :: u(:, :)
   REAL(wp),             INTENT(IN)  :: v(:, :)
-  REAL(wp),             INTENT(OUT) :: apmflux(:,:)
-  REAL(wp),             INTENT(OUT) :: amflux (:,:)
   REAL(wp),             INTENT(OUT) :: uuflux(:,:)
   REAL(wp),             INTENT(OUT) :: uvflux(:,:)
   REAL(wp),             INTENT(OUT) :: uwflux(:,:)
   REAL(wp),             INTENT(OUT) :: vvflux(:,:)
   REAL(wp),             INTENT(OUT) :: vwflux(:,:)
-  REAL(wp),             INTENT(OUT) :: mflux_e(:,:)
-  REAL(wp),             INTENT(OUT) :: mflux_w(:,:)
-  REAL(wp),             INTENT(OUT) :: mflux_s(:,:)
-  REAL(wp),             INTENT(OUT) :: mflux_n(:,:)
-  REAL(wp),             INTENT(OUT) :: waflux_u(:,:)
-  REAL(wp),             INTENT(OUT) :: waflux_d(:,:)
-  REAL(wp),             INTENT(OUT) :: waflux_e(:,:)
-  REAL(wp),             INTENT(OUT) :: waflux_w(:,:)
-  REAL(wp),             INTENT(OUT) :: waflux_s(:,:)
-  REAL(wp),             INTENT(OUT) :: waflux_n(:,:)
-  REAL(wp),             INTENT(OUT) :: aptflux (:,:)
   REAL(wp),             INTENT(OUT) :: utflux(:,:)
   REAL(wp),             INTENT(OUT) :: vtflux(:,:)
-  REAL(wp),             INTENT(OUT) :: ptflux_e(:,:)
-  REAL(wp),             INTENT(OUT) :: ptflux_w(:,:)
-  REAL(wp),             INTENT(OUT) :: ptflux_s(:,:)
-  REAL(wp),             INTENT(OUT) :: ptflux_n(:,:)
-  REAL(wp),             INTENT(OUT) :: energy(:,:)
-  REAL(wp),             INTENT(OUT) :: energy_p(:,:)
-  REAL(wp),             INTENT(OUT) :: waction(:,:)
+  REAL(wp),             INTENT(OUT) :: uupflux(:,:)
+  REAL(wp),             INTENT(OUT) :: uvpflux(:,:)
+  REAL(wp),             INTENT(OUT) :: uwpflux(:,:)
+  REAL(wp),             INTENT(OUT) :: vvpflux(:,:)
+  REAL(wp),             INTENT(OUT) :: vwpflux(:,:)
 
   INTEGER                      :: nlevp1
   INTEGER                      :: jk, jc
@@ -3490,13 +3913,15 @@ SUBROUTINE wave2grid(nlev,i_startidx,i_endidx,jray_start,jray_end,z,zhalf,fc,cel
   REAL(wp)                     :: term_acg_kl, term_ptf, term_f2
   REAL(wp)                     :: m2
   REAL(wp)                     :: K2_p_gam2
-  REAL(wp)                     :: a_ray, apmom
+  REAL(wp)                     :: a_ray
   REAL(wp)                     :: a_ray_jk
-  REAL(wp)                     :: uni_expl, zero_expl
   REAL(wp)                     :: a_cgz_ray(nlev+1)
+  REAL(wp)                     :: a_cgz_ray_pmom(nlev+1)
   REAL(wp)                     :: m2_p_gam2(nlev+1)
   REAL(wp)                     :: mf_xz_ray_full
   REAL(wp)                     :: mf_yz_ray_full
+  REAL(wp)                     :: pmf_xz_ray_full
+  REAL(wp)                     :: pmf_yz_ray_full
   REAL(wp)                     :: ptf_x_ray(nlev)
   REAL(wp)                     :: ptf_y_ray(nlev)
   REAL(wp)                     :: mf_xx_ray(nlev)
@@ -3504,6 +3929,11 @@ SUBROUTINE wave2grid(nlev,i_startidx,i_endidx,jray_start,jray_end,z,zhalf,fc,cel
   REAL(wp)                     :: mf_xz_ray(nlev+1)
   REAL(wp)                     :: mf_yy_ray(nlev)
   REAL(wp)                     :: mf_yz_ray(nlev+1)
+  REAL(wp)                     :: pmf_xx_ray(nlev)
+  REAL(wp)                     :: pmf_xy_ray(nlev)
+  REAL(wp)                     :: pmf_xz_ray(nlev+1)
+  REAL(wp)                     :: pmf_yy_ray(nlev)
+  REAL(wp)                     :: pmf_yz_ray(nlev+1)
   REAL(wp)                     :: e_tot_ray(nlev)
   REAL(wp)                     :: f2_o_bvf2(nlev)
   REAL(wp)                     :: fact_grid(nproma,nlev)
@@ -3532,36 +3962,19 @@ SUBROUTINE wave2grid(nlev,i_startidx,i_endidx,jray_start,jray_end,z,zhalf,fc,cel
   nlevp1 = nlev+1
 
   ! Initialize outputs
-  apmflux(:,:) = 0._wp ; amflux(:,:) = 0._wp
   uuflux(:,:) = 0._wp  ; uvflux(:,:) = 0._wp  ; uwflux(:,:) = 0._wp
   vvflux(:,:) = 0._wp  ; vwflux(:,:) = 0._wp
-  aptflux(:,:) = 0._wp ; utflux(:,:) = 0._wp  ; vtflux(:,:) = 0._wp
-  energy(:,:) = 0._wp  ; energy_p(:,:) = 0._wp 
-  waction(:,:) = 0._wp
-
-  ! Initialize fluxes in E, W, N, S directions
-  IF ( lcalc_flux_4dir ) THEN
-    mflux_e(:,:) = 0._wp  ; mflux_w(:,:) = 0._wp
-    mflux_n(:,:) = 0._wp  ; mflux_s(:,:) = 0._wp
-    waflux_d(:,:) = 0._wp  ; waflux_u(:,:) = 0._wp
-    waflux_e(:,:) = 0._wp  ; waflux_w(:,:) = 0._wp
-    waflux_n(:,:) = 0._wp  ; waflux_s(:,:) = 0._wp
-    ptflux_e(:,:) = 0._wp ; ptflux_w(:,:) = 0._wp
-    ptflux_n(:,:) = 0._wp ; ptflux_s(:,:) = 0._wp
-  END IF
+  utflux(:,:) = 0._wp  ; vtflux(:,:) = 0._wp
+  uupflux(:,:) = 0._wp ; uvpflux(:,:) = 0._wp ; uwpflux(:,:) = 0._wp
+  vvpflux(:,:) = 0._wp ; vwpflux(:,:) = 0._wp
 
   ! Initialize temporary variables
-  ptf_x_ray(:) = 0._wp ; ptf_y_ray(:) = 0._wp
-  mf_xx_ray(:) = 0._wp ; mf_xy_ray(:) = 0._wp ; mf_xz_ray(:) = 0._wp
-  mf_yy_ray(:) = 0._wp ; mf_yz_ray(:) = 0._wp
-  e_tot_ray(:) = 0._wp ; f2_o_bvf2(:) = 0._wp
-
-  IF (lmsgwam_pmomflux) THEN
-    uni_expl = 0._wp  ;  zero_expl = 1._wp
-    term_f2  = 0._wp
-  ELSE
-    uni_expl = 1._wp  ;  zero_expl = 0._wp
-  ENDIF
+  ptf_x_ray(:) = 0._wp  ; ptf_y_ray(:) = 0._wp
+  mf_xx_ray(:) = 0._wp  ; mf_xy_ray(:) = 0._wp  ; mf_xz_ray(:) = 0._wp
+  mf_yy_ray(:) = 0._wp  ; mf_yz_ray(:) = 0._wp
+  pmf_xx_ray(:) = 0._wp ; pmf_xy_ray(:) = 0._wp ; pmf_xz_ray(:) = 0._wp
+  pmf_yy_ray(:) = 0._wp ; pmf_yz_ray(:) = 0._wp
+  e_tot_ray(:) = 0._wp  ; f2_o_bvf2(:) = 0._wp
 
   IF (is_plane_torus) THEN
     r_sq = 1._wp
@@ -3604,12 +4017,6 @@ SUBROUTINE wave2grid(nlev,i_startidx,i_endidx,jray_start,jray_end,z,zhalf,fc,cel
           !  ^ Here the formular of fractional area should be consistent with other parts
           !    (e.g. source formular, arealonk formular) for conservation and smoothness
 
-#ifdef __test_awaypole
-a_ray = a_ray*min(1._wp, max(0._wp, 1.-(acos(coslatray(jc,jray))*rad2deg-75.)/(85.-75.)))
-#endif
-
-      apmom = Kh*a_ray
-
       !
       ! Calculate horizontal fluxes on full levels
       !
@@ -3643,47 +4050,43 @@ a_ray = a_ray*min(1._wp, max(0._wp, 1.-(acos(coslatray(jc,jray))*rad2deg-75.)/(8
         a_ray_jk = dzi_o_dz * a_ray
 
 #ifndef __msgwam1d
-        ! Below either IF-branching or uni_expl can be removed.
-        IF (.NOT. lmsgwam_pmomflux) THEN
-          ! Calculate potential-temperature flux (rho*u*theta)
-!         term_ptf = uni_expl*fc(jc)*a_ray_jk &
+        ! Calculate potential-temperature flux (rho*u*theta)
+!         term_ptf = fc(jc)*a_ray_jk &
 !                    *theta(jc,jk)*bvf2_full(jc,jk)*mray(jc,jray) &
 !                    /(grav*omega*K2_p_gam2)
 !         ! The grid variables independent of ray variables are multiplied outside the jray loop
-          term_ptf = uni_expl * a_ray_jk*mray(jc,jray)/(omega*K2_p_gam2)
+        term_ptf = a_ray_jk*mray(jc,jray)/(omega*K2_p_gam2)
 
-          ptf_x_ray(jk) = lray(jc,jray)*term_ptf
-          utflux(jc,jk) = utflux(jc,jk) + ptf_x_ray(jk)
+        ptf_x_ray(jk) = lray(jc,jray)*term_ptf
+        utflux(jc,jk) = utflux(jc,jk) + ptf_x_ray(jk)
 
-          ptf_y_ray(jk) = -kray(jc,jray)*term_ptf
-          vtflux(jc,jk) = vtflux(jc,jk) + ptf_y_ray(jk)
-
-          aptflux(jc,jk) = aptflux(jc,jk) + ABS(Kh*term_ptf)
-
-          term_f2 = uni_expl*fc2(jc)*Kh2/(omega2 - fc2(jc))
-        END IF
+        ptf_y_ray(jk) = -kray(jc,jray)*term_ptf
+        vtflux(jc,jk) = vtflux(jc,jk) + ptf_y_ray(jk)
+        
+        term_f2 = fc2(jc)*Kh2/(omega2 - fc2(jc))
 
         ! A * cg_(x,y) / (k,l)
         term_acg_kl = a_ray_jk*(bvf2_full(jc,jk) - omega2)/(omega*K2_p_gam2)
 
         ! Calculate momentum flux (rho*u*u)
-        mf_xx_ray(jk) = term_acg_kl * (kray(jc,jray)**2 + term_f2)
-        uuflux(jc,jk) = uuflux(jc,jk) + mf_xx_ray(jk)
+        mf_xx_ray(jk)  = term_acg_kl * (kray(jc,jray)**2 + term_f2)
+        uuflux(jc,jk)  = uuflux(jc,jk)  + mf_xx_ray(jk)
+        pmf_xx_ray(jk) = term_acg_kl * kray(jc,jray)**2
+        uupflux(jc,jk) = uupflux(jc,jk) + pmf_xx_ray(jk)
 
         ! Calculate momentum flux (rho*u*v)
         mf_xy_ray(jk) = term_acg_kl * kray(jc,jray)*lray(jc,jray)
         uvflux(jc,jk) = uvflux(jc,jk) + mf_xy_ray(jk)
+        pmf_xy_ray(jk) = term_acg_kl * kray(jc,jray)*lray(jc,jray)
+        uvpflux(jc,jk) = uvpflux(jc,jk) + pmf_xy_ray(jk)
 
         ! Calculate momentum flux (rho*v*v)
         mf_yy_ray(jk) = term_acg_kl * (lray(jc,jray)**2 + term_f2)
         vvflux(jc,jk) = vvflux(jc,jk) + mf_yy_ray(jk)
+        pmf_yy_ray(jk) = term_acg_kl * lray(jc,jray)**2 
+        vvpflux(jc,jk) = vvpflux(jc,jk) + pmf_yy_ray(jk)
 #endif
 
-        ! Calculate wave energy
-        e_tot_ray(jk) = omega*a_ray_jk
-        energy(jc,jk) = energy(jc,jk) + e_tot_ray(jk)
-
-        waction(jc,jk) = waction(jc,jk) + a_ray_jk
       ENDDO ! jk
 
       !
@@ -3709,33 +4112,30 @@ a_ray = a_ray*min(1._wp, max(0._wp, 1.-(acos(coslatray(jc,jray))*rad2deg-75.)/(8
 
         ! Vertical group velocity with pinc scale height correction
         cgz_modif = - branch*mray(jc,jray)/(SQRT(omega2)*K2_p_gam2)
-        cgz = cgz_modif*(omega2 - fc2(jc))
-        IF (lmsgwam_pmomflux) THEN
-          cgz_modif = cgz
-        ELSE
-          ! cgz modified by the factor 1/(1 - f2/omega2)
-          cgz_modif = cgz_modif*omega2
-        ENDIF
-!       cgz_modif = cgz_modif*(omega2 - zero_expl*fc2(jc))
+        cgz = cgz_modif*(omega2 - fc2(jc))  ! for pseudomomentum fluxes
+        cgz_modif = cgz_modif*omega2        ! for momentum fluxes
 
         ! Note: The source in init_gw_orretal uses a hydrostatic, non-rotational 
         ! disp. rel.. In order to reproduce the launch flux defined in there
         ! we keep the lines below. 
-        !omega2 = bvf2_half(jc,jk)*Kh2/mray(jc,jray)**2
-        !cgz_modif = - branch*SQRT(omega2)/mray(jc,jray)
+        ! omega2 = bvf2_half(jc,jk) * Kh2 / mray(jc, jray)**2
+        ! cgz_modif = - branch * SQRT(omega2) / mray(jc, jray)
 
         ! Wave action times cg relevant to the vertical level with index jk
         a_cgz_ray(jk) = dzi_o_dz * a_ray * cgz_modif
+        a_cgz_ray_pmom(jk) = dzi_o_dz * a_ray * cgz
 
         ! Calculate momentum flux (rho*u*w)
-        mf_xz_ray(jk) = kray(jc,jray)*a_cgz_ray(jk)
+        mf_xz_ray(jk) = kray(jc,jray) * a_cgz_ray(jk)
         uwflux(jc,jk) = uwflux(jc,jk) + mf_xz_ray(jk)
+        pmf_xz_ray(jk) = kray(jc,jray) * a_cgz_ray_pmom(jk)
+        uwpflux(jc,jk) = uwpflux(jc,jk) + pmf_xz_ray(jk)
 
         ! Calculate momentum flux (rho*v*w)
-        mf_yz_ray(jk) = lray(jc,jray)*a_cgz_ray(jk)
+        mf_yz_ray(jk) = lray(jc,jray) * a_cgz_ray(jk)
         vwflux(jc,jk) = vwflux(jc,jk) + mf_yz_ray(jk)
-
-        apmflux(jc,jk) = apmflux(jc,jk) + ABS(dzi_o_dz * apmom * cgz)
+        pmf_yz_ray(jk) = lray(jc,jray) * a_cgz_ray_pmom(jk)
+        vwpflux(jc,jk) = vwpflux(jc,jk) + pmf_yz_ray(jk)
 
       ENDDO ! jk
 
@@ -3745,154 +4145,61 @@ a_ray = a_ray*min(1._wp, max(0._wp, 1.-(acos(coslatray(jc,jray))*rad2deg-75.)/(8
       ! clean-up for (mf_xz_ray_full, mf_yz_ray_full)
       mf_xz_ray(jkmin_full(jc,jray)-1) = 0.  ;  mf_xz_ray(jkmax_full(jc,jray)+1) = 0.
       mf_yz_ray(jkmin_full(jc,jray)-1) = 0.  ;  mf_yz_ray(jkmax_full(jc,jray)+1) = 0.
+      pmf_xz_ray(jkmin_full(jc,jray)-1) = 0. ;  pmf_xz_ray(jkmax_full(jc,jray)+1) = 0.
+      pmf_yz_ray(jkmin_full(jc,jray)-1) = 0. ;  pmf_yz_ray(jkmax_full(jc,jray)+1) = 0.
       !
       DO jk = jkmin_half(jc,jray), jkmax_half(jc,jray) ! jkmin_half > 1, jkmax_half < nlevp1
         ! Interpolate vertical fluxes to full levels
-        mf_xz_ray_full = (mf_xz_ray(jk)+mf_xz_ray(jk+1))/2._wp
-        mf_yz_ray_full = (mf_yz_ray(jk)+mf_yz_ray(jk+1))/2._wp
-        amflux(jc,jk) = amflux(jc,jk) + SQRT(mf_xz_ray_full**2 + ABS(mf_yz_ray_full)**2)
-        energy_p(jc,jk) = energy_p(jc,jk)  &
-          &       + e_tot_ray(jk)/(1._wp + f2_o_bvf2(jk)*m2_p_gam2(jk)/Kh2)
+        mf_xz_ray_full = (mf_xz_ray(jk) + mf_xz_ray(jk+1)) / 2._wp
+        mf_yz_ray_full = (mf_yz_ray(jk) + mf_yz_ray(jk+1)) / 2._wp
+        pmf_xz_ray_full = (pmf_xz_ray(jk) + pmf_xz_ray(jk+1)) / 2._wp
+        pmf_yz_ray_full = (pmf_yz_ray(jk) + pmf_yz_ray(jk+1)) / 2._wp
       ENDDO ! jk
-
-      ! Calculate eastward / northward pseudo-momentum flux 
-      ! on full levels (only for diagnostics)
-      IF ( lcalc_flux_4dir ) THEN
-        IF (kray(jc,jray) > 0._wp) THEN
-          DO jk = jkmin_half(jc,jray), jkmax_half(jc,jray) ! jkmin_half > 1, jkmax_half < nlevp1
-            ! Interpolate vertical fluxes to full levels
-            mf_xz_ray_full = (mf_xz_ray(jk)+mf_xz_ray(jk+1))/2._wp
-            mflux_e(jc,jk)  = mflux_e(jc,jk)  + mf_xz_ray_full
-            ptflux_e(jc,jk) = ptflux_e(jc,jk) + ptf_x_ray(jk)
-          ENDDO
-        END IF
-        IF (lray(jc,jray) > 0._wp) THEN
-          DO jk = jkmin_half(jc,jray), jkmax_half(jc,jray) ! jkmin_half > 1, jkmax_half < nlevp1
-            ! Interpolate vertical fluxes to full levels
-            mf_yz_ray_full = (mf_yz_ray(jk)+mf_yz_ray(jk+1))/2._wp
-            mflux_n(jc,jk)  = mflux_n(jc,jk)  + mf_yz_ray_full
-            ptflux_n(jc,jk) = ptflux_n(jc,jk) + ptf_y_ray(jk)
-          ENDDO
-        END IF
-
-        DO jk = jkmin_half(jc,jray), jkmax_half(jc,jray)  ! jkmax_half < nlevp1
-          ! Note: jkmin_half and jkmax_half denote the half-level indices above the
-          ! top and bottom of the ray volume, respectively. An interval between
-          ! two half levels, [jk, jk+1], is centered on the full level jk.
-
-          ! calculate locally corrected wave number squares
-          m2_p_gam2(jk) = m2 + gammash2_full(jc,jk)
-          K2_p_gam2 = K2 + gammash2_full(jc,jk)
-
-          ! calculate the local intrinsic frequency
-          omega2 = (bvf2_full(jc, jk) * Kh2 + fc2(jc) * m2_p_gam2(jk)) / K2_p_gam2
-
-          ! calculate the corresponding local extrinsic group velocities
-          cglon = branch * kray(jc, jray) / (SQRT(omega2) * K2_p_gam2) * (bvf2_full(jc, jk) - omega2) + u(jc, jk)
-          cglat = branch * lray(jc, jray) / (SQRT(omega2) * K2_p_gam2) * (bvf2_full(jc, jk) - omega2) + v(jc, jk)
-          cgr = - branch * mray(jc, jray) / (SQRT(omega2) * K2_p_gam2) * (omega2 - fc2(jc))
-
-          ! get partial height of ray volume in layer
-          dzi_o_dz = (MIN(zray_u, zhalf(jc,jk)) - MAX(zray_d_eff, zhalf(jc,jk+1))) / (zhalf(jc,jk) - zhalf(jc,jk+1))
-
-          ! calculate partial wave action associated to the vertical layer
-          a_ray_jk = ABS(dzi_o_dz * a_ray)
-
-          waflux_d(jc, jk) = waflux_d(jc, jk) + MIN(0._wp, cgr) * a_ray_jk      ! downward wave action flux
-          waflux_u(jc, jk) = waflux_u(jc, jk) + MAX(0._wp, cgr) * a_ray_jk      ! upward wave action flux
-          waflux_w(jc, jk) = waflux_w(jc, jk) + MIN(0._wp, cglon) * a_ray_jk    ! westward wave action flux
-          waflux_e(jc, jk) = waflux_e(jc, jk) + MAX(0._wp, cglon) * a_ray_jk    ! eastward wave action flux
-          waflux_s(jc, jk) = waflux_s(jc, jk) + MIN(0._wp, cglat) * a_ray_jk    ! southward wave action flux
-          waflux_n(jc, jk) = waflux_n(jc, jk) + MAX(0._wp, cglat) * a_ray_jk    ! northward wave action flux
-        ENDDO
-
-      END IF
 
     ENDDO ! jray
 
   ENDDO ! jc
 
   ! Finalize heat fluxes
-  IF (.NOT. lmsgwam_pmomflux) THEN
-    DO jk = 1, nlev
-      DO jc = i_startidx, i_endidx
-        fact_grid(jc,jk) = fc(jc)*theta(jc,jk)*bvf2_full(jc,jk)/grav
-        !
-        utflux (jc,jk) = utflux (jc,jk)*fact_grid(jc,jk)
-        vtflux (jc,jk) = vtflux (jc,jk)*fact_grid(jc,jk)
-        aptflux(jc,jk) = aptflux(jc,jk)*ABS(fact_grid(jc,jk))
-      ENDDO
-    ENDDO
-    IF ( lcalc_flux_4dir ) THEN
-      DO jk = 1, nlev
-        DO jc = i_startidx, i_endidx
-          ptflux_e(jc,jk) = ptflux_e(jc,jk)*fact_grid(jc,jk)
-          ptflux_n(jc,jk) = ptflux_n(jc,jk)*fact_grid(jc,jk)
-        ENDDO
-      ENDDO
-    END IF
-  END IF
-
-  ! Finalize potential energy calculation
-  DO jk = 2, nlev-1
+  DO jk = 1, nlev
     DO jc = i_startidx, i_endidx
-      energy_p(jc,jk) = energy_p(jc,jk)*0.5_wp
+      fact_grid(jc, jk) = fc(jc) * theta(jc, jk) * bvf2_full(jc, jk) / grav
+      !
+      utflux(jc, jk) = utflux(jc, jk) * fact_grid(jc, jk)
+      vtflux(jc, jk) = vtflux(jc, jk) * fact_grid(jc, jk)
     ENDDO
   ENDDO
 
   ! Boundary conditions
   DO jc = i_startidx, i_endidx
     ! Boundaries to conserve momentum
-    uwflux  (jc,1) = 0._wp ; uwflux  (jc,nlevp1) = 0._wp
-    vwflux  (jc,1) = 0._wp ; vwflux  (jc,nlevp1) = 0._wp
-!   energy  (jc,1) = 0._wp ; energy  (jc,nlev)   = 0._wp  ! this needs reviewing
-!   energy_p(jc,1) = 0._wp ; energy_p(jc,nlev)   = 0._wp
-!   waction (jc,1) = 0._wp ; waction (jc,nlev)   = 0._wp
+    uwflux  (jc,1) = 0._wp  ; uwflux  (jc,nlevp1) = 0._wp
+    vwflux  (jc,1) = 0._wp  ; vwflux  (jc,nlevp1) = 0._wp
+    uwpflux  (jc,1) = 0._wp ; uwpflux  (jc,nlevp1) = 0._wp
+    vwpflux  (jc,1) = 0._wp ; vwpflux  (jc,nlevp1) = 0._wp
   ENDDO ! jc
-  ! Note: The other diagnostic outputs which are not directly involved 
-  ! in the tendency calculation (absolute flux and fluxes at each direction) 
-  ! will have zero values at jk = 1 and nlev, as initialized.
 
   ! Smooth pseudo-momentum fluxes / energy with a Shapiro filter
   IF (lsmooth) THEN
-    CALL smooth_vert(nlevp1,i_startidx,i_endidx,nsmooth,.FALSE., apmflux)
-    CALL smooth_vert(nlev,  i_startidx,i_endidx,nsmooth,.FALSE., amflux)
     CALL smooth_vert(nlev,  i_startidx,i_endidx,nsmooth,.FALSE., uuflux)
     CALL smooth_vert(nlev,  i_startidx,i_endidx,nsmooth,.FALSE., uvflux)
     CALL smooth_vert(nlevp1,i_startidx,i_endidx,nsmooth,.FALSE., uwflux)
     CALL smooth_vert(nlev,  i_startidx,i_endidx,nsmooth,.FALSE., vvflux)
     CALL smooth_vert(nlevp1,i_startidx,i_endidx,nsmooth,.FALSE., vwflux)
-    CALL smooth_vert(nlev,  i_startidx,i_endidx,nsmooth,.FALSE., aptflux)
+    CALL smooth_vert(nlev,  i_startidx,i_endidx,nsmooth,.FALSE., uupflux)
+    CALL smooth_vert(nlev,  i_startidx,i_endidx,nsmooth,.FALSE., uvpflux)
+    CALL smooth_vert(nlevp1,i_startidx,i_endidx,nsmooth,.FALSE., uwpflux)
+    CALL smooth_vert(nlev,  i_startidx,i_endidx,nsmooth,.FALSE., vvpflux)
+    CALL smooth_vert(nlevp1,i_startidx,i_endidx,nsmooth,.FALSE., vwpflux)
     CALL smooth_vert(nlev,  i_startidx,i_endidx,nsmooth,.FALSE., utflux)
     CALL smooth_vert(nlev,  i_startidx,i_endidx,nsmooth,.FALSE., vtflux)
-    CALL smooth_vert(nlev,  i_startidx,i_endidx,nsmooth,.FALSE., energy)
-    CALL smooth_vert(nlev,  i_startidx,i_endidx,nsmooth,.FALSE., energy_p)
-    CALL smooth_vert(nlev,  i_startidx,i_endidx,nsmooth,.FALSE., waction)
-    IF ( lcalc_flux_4dir ) THEN
-      CALL smooth_vert(nlev,i_startidx,i_endidx,nsmooth,.FALSE., mflux_e)
-      CALL smooth_vert(nlev,i_startidx,i_endidx,nsmooth,.FALSE., mflux_n)
-      CALL smooth_vert(nlev,i_startidx,i_endidx,nsmooth,.FALSE., ptflux_e)
-      CALL smooth_vert(nlev,i_startidx,i_endidx,nsmooth,.FALSE., ptflux_n)
-    END IF
-  END IF
-
-  ! Calculate westward / southward pseudo-momentum fluxes
-  IF ( lcalc_flux_4dir ) THEN
-    DO jk = 2,nlev
-      DO jc = i_startidx, i_endidx
-        mflux_w(jc,jk)  = uwflux(jc,jk) - mflux_e(jc,jk)
-        mflux_s(jc,jk)  = vwflux(jc,jk) - mflux_n(jc,jk)
-        ptflux_w(jc,jk) = utflux(jc,jk) - ptflux_e(jc,jk)
-        ptflux_s(jc,jk) = vtflux(jc,jk) - ptflux_n(jc,jk)
-      ENDDO
-    ENDDO
   END IF
 
 END SUBROUTINE wave2grid
 !!
 !!-------------------------------------------------------------------------
 !!
-SUBROUTINE tendency(p_patch,p_metrics,p_int_state,rho,temp,theta,p_fld)
+SUBROUTINE tendency(p_patch, p_metrics, p_int_state, rho, temp, theta, p_fld)
   TYPE(t_patch),  TARGET,INTENT(IN)    :: p_patch
   TYPE(t_nh_metrics)    ,INTENT(IN)    :: p_metrics
   TYPE(t_int_state)     ,INTENT(IN)    :: p_int_state
@@ -3913,6 +4220,8 @@ SUBROUTINE tendency(p_patch,p_metrics,p_int_state,rho,temp,theta,p_fld)
   REAL(wp)              :: fc_o_rho_th
   REAL(wp)              :: uufl_c1, uvfl_c1, vvfl_c1
   REAL(wp)              :: uufl_c2, uvfl_c2, vvfl_c2
+  REAL(wp)              :: uupfl_c1, uvpfl_c1, vvpfl_c1
+  REAL(wp)              :: uupfl_c2, uvpfl_c2, vvpfl_c2
   REAL(wp)              :: utfl_c1, vtfl_c1
   REAL(wp)              :: utfl_c2, vtfl_c2
   REAL(wp)              :: ddt_theta_gwd_mgm
@@ -3922,10 +4231,16 @@ SUBROUTINE tendency(p_patch,p_metrics,p_int_state,rho,temp,theta,p_fld)
                                              ! at cell edge midpoints
   REAL(wp), ALLOCATABLE :: vfl_hor_e(:,:,:)  ! horizontal flux of v 
                                              ! at cell edge midpoints
+  REAL(wp), ALLOCATABLE :: upfl_hor_e(:,:,:) ! horizontal pflux of u 
+                                             ! at cell edge midpoints
+  REAL(wp), ALLOCATABLE :: vpfl_hor_e(:,:,:) ! horizontal pflux of v 
+                                             ! at cell edge midpoints
   REAL(wp), ALLOCATABLE :: ptfl_hor_e(:,:,:) ! horizontal flux of pot temp
                                              ! at cell edge midpoints 
   REAL(wp), ALLOCATABLE :: ufldiv_hor(:,:,:) ! horizontal div of u fluxes
   REAL(wp), ALLOCATABLE :: vfldiv_hor(:,:,:) ! horizontal div of v fluxes
+  REAL(wp), ALLOCATABLE :: upfldiv_hor(:,:,:) ! horizontal div of u fluxes
+  REAL(wp), ALLOCATABLE :: vpfldiv_hor(:,:,:) ! horizontal div of v fluxes
   REAL(wp), ALLOCATABLE :: ptfldiv_hor(:,:,:)! horizontal div of pot temp fluxes
 
   REAL(wp), PARAMETER :: gam = cpd/cvd
@@ -3992,6 +4307,22 @@ SUBROUTINE tendency(p_patch,p_metrics,p_int_state,rho,temp,theta,p_fld)
         DO jk = jk0+1, nlev-1
           p_fld%vtfl_mgm(jc,jk,jb) = flxgrad*(p_metrics%z_mc(jc,jk,jb) - p_metrics%z_mc(jc,nlev,jb))
         ENDDO
+        flxgrad = p_fld%uupfl_mgm(jc,jk0,jb) * inv_depth
+        DO jk = jk0+1, nlev-1
+          p_fld%uupfl_mgm(jc,jk,jb) = flxgrad * (p_metrics%z_mc(jc,jk,jb) - p_metrics%z_mc(jc,nlev,jb))
+        ENDDO
+        flxgrad = p_fld%uvpfl_mgm(jc,jk0,jb) * inv_depth
+        DO jk = jk0+1, nlev-1
+          p_fld%uvpfl_mgm(jc,jk,jb) = flxgrad*(p_metrics%z_mc(jc,jk,jb) - p_metrics%z_mc(jc,nlev,jb))
+        ENDDO
+        flxgrad = p_fld%vvpfl_mgm(jc,jk0,jb) * inv_depth
+        DO jk = jk0+1, nlev-1
+          p_fld%vvpfl_mgm(jc,jk,jb) = flxgrad*(p_metrics%z_mc(jc,jk,jb) - p_metrics%z_mc(jc,nlev,jb))
+        ENDDO
+        
+        p_fld%uupfl_mgm(jc,nlev,jb) = 0._wp
+        p_fld%uvpfl_mgm(jc,nlev,jb) = 0._wp
+        p_fld%vvpfl_mgm(jc,nlev,jb) = 0._wp
         p_fld%uufl_mgm(jc,nlev,jb) = 0._wp
         p_fld%uvfl_mgm(jc,nlev,jb) = 0._wp
         p_fld%vvfl_mgm(jc,nlev,jb) = 0._wp
@@ -4007,8 +4338,18 @@ SUBROUTINE tendency(p_patch,p_metrics,p_int_state,rho,temp,theta,p_fld)
         DO jk = jk0+1, nlev
           p_fld%vwfl_mgm(jc,jk,jb) = flxgrad*(p_metrics%z_ifc(jc,jk,jb) - p_metrics%z_mc(jc,nlev,jb))
         ENDDO
+        flxgrad = 0.5_wp * (p_fld%uwpfl_mgm(jc,jk0,jb) + p_fld%uwpfl_mgm(jc,jk0+1,jb)) * inv_depth
+        DO jk = jk0+1, nlev
+          p_fld%uwpfl_mgm(jc,jk,jb) = flxgrad * (p_metrics%z_ifc(jc,jk,jb) - p_metrics%z_mc(jc,nlev,jb))
+        ENDDO
+        flxgrad = 0.5_wp * (p_fld%vwpfl_mgm(jc,jk0,jb) + p_fld%vwpfl_mgm(jc,jk0+1,jb)) * inv_depth
+        DO jk = jk0+1, nlev
+          p_fld%vwpfl_mgm(jc,jk,jb) = flxgrad * (p_metrics%z_ifc(jc,jk,jb) - p_metrics%z_mc(jc,nlev,jb))
+        ENDDO
         p_fld%uwfl_mgm(jc,nlev+1,jb) = 0._wp
         p_fld%vwfl_mgm(jc,nlev+1,jb) = 0._wp
+        p_fld%uwpfl_mgm(jc,nlev+1,jb) = 0._wp
+        p_fld%vwpfl_mgm(jc,nlev+1,jb) = 0._wp
       ENDDO  ! jc
     ENDDO  ! jb
 
@@ -4039,6 +4380,7 @@ SUBROUTINE tendency(p_patch,p_metrics,p_int_state,rho,temp,theta,p_fld)
   ! Synchronize fields and fluxes
   CALL sync_patch_array_mult(SYNC_C1, p_patch, 5, p_fld%uufl_mgm, p_fld%uvfl_mgm,  &
     &                        p_fld%vvfl_mgm, p_fld%utfl_mgm, p_fld%vtfl_mgm)
+  CALL sync_patch_array_mult(SYNC_C1, p_patch, 3, p_fld%uupfl_mgm, p_fld%uvpfl_mgm, p_fld%vvpfl_mgm)
 
   ! Initialize horizontal fluxes at cell edges
   ufl_hor_e = 0._wp ; vfl_hor_e = 0._wp ; ptfl_hor_e = 0._wp
@@ -4092,6 +4434,30 @@ SUBROUTINE tendency(p_patch,p_metrics,p_int_state,rho,temp,theta,p_fld)
                              + p_int_state%c_lin_e(jce,2,jb) &
                                * ( uvfl_c2 * p_patch%edges%primal_normal_cell(jce,jb,2)%v1  &
                                +   vvfl_c2 * p_patch%edges%primal_normal_cell(jce,jb,2)%v2 )
+        
+        ! Horizontal pflux of u at cell center points divided by rho
+        uupfl_c1 = p_fld%uupfl_mgm(iidx(jce,jb,1),jk,iblk(jce,jb,1))
+        uvpfl_c1 = p_fld%uvpfl_mgm(iidx(jce,jb,1),jk,iblk(jce,jb,1))
+        uupfl_c2 = p_fld%uupfl_mgm(iidx(jce,jb,2),jk,iblk(jce,jb,2))
+        uvpfl_c2 = p_fld%uvpfl_mgm(iidx(jce,jb,2),jk,iblk(jce,jb,2))
+        ! Interpolation from cell center to cell edge midpoints
+        upfl_hor_e(jce,jk,jb) = p_int_state%c_lin_e(jce,1,jb) &
+                                * ( uupfl_c1 * p_patch%edges%primal_normal_cell(jce,jb,1)%v1  &
+                                +   uvpfl_c1 * p_patch%edges%primal_normal_cell(jce,jb,1)%v2 )&
+                              + p_int_state%c_lin_e(jce,2,jb) &
+                                * ( uupfl_c2 * p_patch%edges%primal_normal_cell(jce,jb,2)%v1  &
+                                +   uvpfl_c2 * p_patch%edges%primal_normal_cell(jce,jb,2)%v2 )
+
+        ! Horizontal pflux of v at cell center points divided by rho
+        vvfl_c1 = p_fld%vvpfl_mgm(iidx(jce,jb,1),jk,iblk(jce,jb,1))
+        vvfl_c2 = p_fld%vvpfl_mgm(iidx(jce,jb,2),jk,iblk(jce,jb,2))
+        ! Interpolation from cell center to cell edge midpoints
+        vpfl_hor_e(jce,jk,jb) = p_int_state%c_lin_e(jce,1,jb) &
+                                * ( uvpfl_c1 * p_patch%edges%primal_normal_cell(jce,jb,1)%v1  &
+                                +   vvpfl_c1 * p_patch%edges%primal_normal_cell(jce,jb,1)%v2 )&
+                              + p_int_state%c_lin_e(jce,2,jb) &
+                                * ( uvpfl_c2 * p_patch%edges%primal_normal_cell(jce,jb,2)%v1  &
+                                +   vvpfl_c2 * p_patch%edges%primal_normal_cell(jce,jb,2)%v2 )
 
         ! Horizontal flux of pot. temperature at cell center points divided by rho
         utfl_c1 = p_fld%utfl_mgm(iidx(jce,jb,1),jk,iblk(jce,jb,1))
@@ -4115,18 +4481,19 @@ SUBROUTINE tendency(p_patch,p_metrics,p_int_state,rho,temp,theta,p_fld)
 !$OMP END PARALLEL
 
   ! Synchronize horizontal fluxes at edge mid-points
-  CALL sync_patch_array_mult(SYNC_E,p_patch,3,ufl_hor_e,vfl_hor_e,ptfl_hor_e)
+  CALL sync_patch_array_mult(SYNC_E, p_patch, 3, ufl_hor_e, vfl_hor_e, ptfl_hor_e)
+  CALL sync_patch_array_mult(SYNC_E, p_patch, 2, upfl_hor_e, vpfl_hor_e)
 
   ! Calculate horizontal divergence of u flux
   !CALL div(vec_e     = ufl_hor_e,   & !in
   !         ptr_patch = p_patch,     & !in
   !         ptr_int   = p_int_state, & !in
   !         div_vec_c = ufldiv_hor)    !out
-  CALL div_avg(ufl_hor_e,         & !in
-           p_patch,               & !in
-           p_int_state,           & !in
-           p_int_state%c_bln_avg, & !in
-           ufldiv_hor)              !out
+  CALL div_avg(ufl_hor_e,             & !in
+               p_patch,               & !in
+               p_int_state,           & !in
+               p_int_state%c_bln_avg, & !in
+               ufldiv_hor)              !out
 
   ! Calculate horizontal divergence of v flux
   !CALL div(vec_e     = vfl_hor_e,   & !in
@@ -4138,6 +4505,20 @@ SUBROUTINE tendency(p_patch,p_metrics,p_int_state,rho,temp,theta,p_fld)
                p_int_state,           & !in
                p_int_state%c_bln_avg, & !in
                vfldiv_hor)              !out
+
+  ! Calculate horizontal divergence of u pflux
+  CALL div_avg(upfl_hor_e,            & !in
+               p_patch,               & !in
+               p_int_state,           & !in
+               p_int_state%c_bln_avg, & !in
+               upfldiv_hor)              !out
+
+  ! Calculate horizontal divergence of v pflux
+  CALL div_avg(vpfl_hor_e,            & !in
+               p_patch,               & !in
+               p_int_state,           & !in
+               p_int_state%c_bln_avg, & !in
+               vpfldiv_hor)              !out
 
   ! Calculate horizontal divergence of pot temperature flux
   !CALL div(vec_e     = ptfl_hor_e,  & !in
@@ -4197,6 +4578,20 @@ SUBROUTINE tendency(p_patch,p_metrics,p_int_state,rho,temp,theta,p_fld)
                     = - vfldiv_hor(jc,jk,jb)*inv_rho  & ! hori flux conv.
                       + p_fld%mfcyz_mgm(jc,jk,jb)     & ! vert flux conv.
                       + p_fld%ety_mgm(jc,jk,jb)         ! elastic term
+        
+        ! Calculate u tendency for pmom fluxes at cell centers on full levels
+        p_fld%pmfcxz_mgm(jc,jk,jb) = -(  p_fld%uwpfl_mgm(jc,jk,jb)  &
+                                      - p_fld%uwpfl_mgm(jc,jk+1,jb) ) * inv_dzrho
+        p_fld%ddt_u_gwd_pmom_mgm(jc,jk,jb)                 &
+                    = - upfldiv_hor(jc,jk,jb)*inv_rho  & ! hori flux conv.
+                      + p_fld%pmfcxz_mgm(jc,jk,jb)       ! vert flux conv.
+
+        ! Calculate v tendency at cell centers on full levels
+        p_fld%pmfcyz_mgm(jc,jk,jb) = -(  p_fld%vwpfl_mgm(jc,jk,jb)  &
+                                       - p_fld%vwpfl_mgm(jc,jk+1,jb) ) * inv_dzrho
+        p_fld%ddt_v_gwd_pmom_mgm(jc,jk,jb)                 &
+                    = - vpfldiv_hor(jc,jk,jb)*inv_rho  & ! hori flux conv.
+                      + p_fld%pmfcyz_mgm(jc,jk,jb)       ! vert flux conv.
 
         ! Calculate pot temp tendency at cell centers on full levels
         ddt_theta_gwd_mgm = - ptfldiv_hor(jc,jk,jb)*inv_rho   ! hori flux conv.
@@ -4209,10 +4604,10 @@ SUBROUTINE tendency(p_patch,p_metrics,p_int_state,rho,temp,theta,p_fld)
 #else
         ! 1-D mode
         inv_dzrho = 1._wp/(p_metrics%ddqz_z_full(jc,jk,jb)*rho(jc,jk,jb))
-        p_fld%ddt_u_gwd_mgm(jc,jk,jb) = -(  p_fld%uwfl_mgm(jc,jk,jb)  &
-                                          - p_fld%uwfl_mgm(jc,jk+1,jb) ) * inv_dzrho
-        p_fld%ddt_v_gwd_mgm(jc,jk,jb) = -(  p_fld%vwfl_mgm(jc,jk,jb)  &
-                                          - p_fld%vwfl_mgm(jc,jk+1,jb) ) * inv_dzrho
+        p_fld%ddt_u_gwd_mgm(jc,jk,jb) = -(  p_fld%uwpfl_mgm(jc,jk,jb)  &
+                                        - p_fld%uwpfl_mgm(jc,jk+1,jb) ) * inv_dzrho
+        p_fld%ddt_v_gwd_mgm(jc,jk,jb) = -(  p_fld%vwpfl_mgm(jc,jk,jb)  &
+                                        - p_fld%vwpfl_mgm(jc,jk+1,jb) ) * inv_dzrho
 #endif
 
       ENDDO ! jc
@@ -4226,6 +4621,10 @@ SUBROUTINE tendency(p_patch,p_metrics,p_int_state,rho,temp,theta,p_fld)
         &              p_fld%ddt_u_gwd_mgm(:,1:nlevsmootht+1,jb))
       CALL smooth_vert(nlevsmootht,i_startidx,i_endidx,nsmooth,.FALSE.,  &
         &              p_fld%ddt_v_gwd_mgm(:,1:nlevsmootht+1,jb))
+      CALL smooth_vert(nlevsmootht,i_startidx,i_endidx,nsmooth,.FALSE.,  &
+        &              p_fld%ddt_u_gwd_pmom_mgm(:,1:nlevsmootht+1,jb))
+      CALL smooth_vert(nlevsmootht,i_startidx,i_endidx,nsmooth,.FALSE.,  &
+        &              p_fld%ddt_v_gwd_pmom_mgm(:,1:nlevsmootht+1,jb))
 #ifndef __msgwam1d
       CALL smooth_vert(nlevsmootht,i_startidx,i_endidx,nsmooth,.FALSE.,  &
         &              p_fld%ddt_t_gwd_mgm(:,1:nlevsmootht+1,jb))
@@ -4241,6 +4640,10 @@ SUBROUTINE tendency(p_patch,p_metrics,p_int_state,rho,temp,theta,p_fld)
   DEALLOCATE( ufl_hor_e, vfl_hor_e, ptfl_hor_e,    &
               ufldiv_hor, vfldiv_hor, ptfldiv_hor, &
               STAT=ist                             )
+  IF (ist /= success) CALL finish ('tendency', 'Deallocation of auxiliary fields failed!')
+  DEALLOCATE( upfl_hor_e, vpfl_hor_e,   &
+              upfldiv_hor, vpfldiv_hor, &
+              STAT=ist                  )
   IF (ist /= success) CALL finish ('tendency', 'Deallocation of auxiliary fields failed!')
 #endif
 
@@ -7338,189 +7741,6 @@ SUBROUTINE regrid_wave( p_patch,        & !in(out)
   ENDIF ! is_plane_torus?
 
 END SUBROUTINE regrid_wave
-!!
-!!-------------------------------------------------------------------------
-!!
-SUBROUTINE smooth_vert(nlev,i_startidx,i_endidx,npts,lchange_bdy, var)
-  INTEGER,  INTENT(IN)    :: nlev
-  INTEGER,  INTENT(IN)    :: i_startidx ! first index of the block
-  INTEGER,  INTENT(IN)    :: i_endidx   ! last index of the block
-  INTEGER,  INTENT(IN)    :: npts       ! half number of points to smooth
-  LOGICAL,  INTENT(IN)    :: lchange_bdy  ! flag for changing boundary values
-  REAL(wp), INTENT(INOUT) :: var(:,:)
-
-  INTEGER                 :: nstenc
-  INTEGER                 :: jc, jk, jks, jk2
-  REAL(wp)                :: var_tmp(nproma,nlev)
-  REAL(wp), PARAMETER     :: stencil(-3:3,0:3) = RESHAPE( (/                              &
-    &  0._wp      ,0._wp      ,0._wp      ,1._wp    ,0._wp      ,0._wp      ,0._wp      , &
-    &  0._wp      ,0._wp      ,0.25_wp    ,0.5_wp   ,0.25_wp    ,0._wp      ,0._wp      , &
-    &  0._wp      ,-0.0625_wp ,0.25_wp    ,0.625_wp ,0.25_wp    ,-0.0625_wp ,0._wp      , &
-    &  0.015625_wp,-0.09375_wp,0.234375_wp,0.6875_wp,0.234375_wp,-0.09375_wp,0.015625_wp  &
-    &  /), (/7,4/) )
-
-  !----------------------------------------------------------------------
-  ! Purpose: 
-  !         Smooth pseudo-momentum fluxes and energy in order to get rid 
-  !         of waves with length scales <= 2dz. Such waves in the 
-  !         projected fluxes / energy might be present e.g. due to sparse 
-  !         ray volume distributions. The preferred smoothing method is a 
-  !         0th order Shapiro filter.
-  !
-  ! Method:
-  !         -- see Shapiro (1975)
-  !----------------------------------------------------------------------
-
-  ! No. of half points for the smoothing stencil
-  nstenc = ABS(npts)
-  ! ABS() is kept to avoid problems with older scripts where npts>0 
-  ! meant a simpler moving average smooting (removed now).
-
-  ! Keep the boundary conditions
-  DO jc = i_startidx, i_endidx
-    var_tmp(jc,1) = var(jc,1)  ;  var_tmp(jc,nlev) = var(jc,nlev)
-  ENDDO
-  ! Near-boundary layers: 3-pt, 5-pt, ...
-  DO jk = 2,nstenc
-    var_tmp(:,jk) = 0._wp  ;  var_tmp(:,nlev+1-jk) = 0._wp
-    DO jks = 1-jk,jk-1
-      jk2 = jk + jks
-      DO jc = i_startidx, i_endidx
-        var_tmp(jc,jk) = var_tmp(jc,jk) + var(jc,jk2)*stencil(jks,jk-1)
-        var_tmp(jc,nlev+1-jk) = var_tmp(jc,nlev+1-jk)  &
-          &                         + var(jc,nlev+1-jk2)*stencil(jks,jk-1)
-      ENDDO ! jc
-    ENDDO ! jks
-    ! Update before calculating the next inner layer
-    DO jc = i_startidx, i_endidx
-      var(jc,jk) = var_tmp(jc,jk)
-      var(jc,nlev+1-jk) = var_tmp(jc,nlev+1-jk)
-    ENDDO ! jc
-  ENDDO ! jk
-  ! Inside: (nstenc)-point smoothing
-  DO jk = 1+nstenc,nlev-nstenc
-    DO jc = i_startidx, i_endidx
-      var_tmp(jc,jk) = var(jc,jk)
-      var(jc,jk) = 0._wp
-    ENDDO
-  ENDDO
-  DO jks = -nstenc,nstenc
-    DO jk = 1+nstenc,nlev-nstenc
-      jk2 = jk + jks
-      DO jc = i_startidx, i_endidx
-        var(jc,jk) = var(jc,jk) + var_tmp(jc,jk2)*stencil(jks,nstenc)
-      ENDDO ! jc
-    ENDDO ! jk
-  ENDDO ! jks
-
-END SUBROUTINE smooth_vert
-!!
-!!-------------------------------------------------------------------------
-!!
-SUBROUTINE smooth_hori( p_patch,        & !inout
-  &                     p_gridinfo4ray, & !in
-  &                     p_int_state,    & !in
-  &                     nlev,           & !in
-  &                     var             ) !inout
-
-  ! In/out variables
-  TYPE(t_patch),        INTENT(INOUT) :: p_patch
-  TYPE(t_gridinfo4ray), INTENT(IN)    :: p_gridinfo4ray
-  TYPE(t_int_state),    INTENT(IN)    :: p_int_state
-  INTEGER,              INTENT(IN)    :: nlev
-  REAL(wp),             INTENT(INOUT) :: var(:,:,:)
-
-  INTEGER                 :: rl_start, rl_end
-  INTEGER                 :: i_startblk, i_endblk
-  INTEGER                 :: i_startidx, i_endidx
-  INTEGER                 :: jb, jc, jk, jv, jc_v
-  INTEGER                 :: vidx(3), vblk(3)
-  INTEGER                 :: cidx_v(6,3), cblk_v(6,3)
-  INTEGER                 :: nbcells_v
-  REAL(wp)                :: var_tmp(nproma,nlev,p_patch%nblks_c)
-  REAL(wp)                :: avg_v(nlev,3)
-
-  !----------------------------------------------------------------------
-  ! Purpose:
-  !         
-  !
-  ! Method:
-  !         -- 
-  !
-  !----------------------------------------------------------------------
-
-  ! Synchronize var to smooth
-!  CALL sync_patch_array(SYNC_C,p_patch,var)  ! placed outside to apply for multiple variables
-
-  IF (.TRUE.) THEN
-  ! All neighbor smoothing with weights suggested by Young-Ha:
-  ! 1) calculate non-weighted average of cells corresponding to 
-  !    each vertex of the actual cell
-  ! 2) calculate non-weighted average of these 3 average values
-  !
-  ! Equivalent to using weightings of
-  !   1/6 for the target (center) cell,
-  !   1/9 for 3 direct neighbors, and
-  !   1/18 for 9 non-direct neighbors.
-
-  ! Prognostic domain
-  rl_start = grf_bdywidth_c + 1
-  rl_end   = min_rlcell_int
-  i_startblk = p_patch%cells%start_block(rl_start)
-  i_endblk   = p_patch%cells%end_block(rl_end)
-
-  ! TODO : How about using a loop for vertices (jv) directly.
-  !        It will do less calculation (~1/6) than now.
-
-!$OMP PARALLEL
-!$OMP DO PRIVATE(jb, jc, jv, jc_v, jk, i_startidx, i_endidx, nbcells_v,  &
-!$OMP            avg_v, vidx, vblk, cidx_v, cblk_v) ICON_OMP_GUIDED_SCHEDULE
-
-  ! Loop over cells
-  DO jb = i_startblk, i_endblk
-    var_tmp(:,:,jb) = 0._wp
-
-    CALL get_indices_c(p_patch, jb, i_startblk, i_endblk, i_startidx, i_endidx, rl_start, rl_end)
-
-    DO jc = i_startidx, i_endidx
-
-      avg_v(:,:) = 0._wp
-
-      ! Get line and block indices of cell vertices
-      vidx(1:3) = p_patch%cells%vertex_idx(jc,jb,1:3)
-      vblk(1:3) = p_patch%cells%vertex_blk(jc,jb,1:3)
-
-      ! For each vertex: get all the cells which share this vertex
-      DO jv = 1, 3
-        nbcells_v = p_patch%verts%num_edges(vidx(jv),vblk(jv))
-        cidx_v(1:nbcells_v,jv) = p_patch%verts%cell_idx(vidx(jv),vblk(jv),1:nbcells_v)
-        cblk_v(1:nbcells_v,jv) = p_patch%verts%cell_blk(vidx(jv),vblk(jv),1:nbcells_v)
-
-        DO jc_v = 1, nbcells_v
-          DO jk = 1, nlev
-            avg_v(jk,jv) = avg_v(jk,jv) + var(cidx_v(jc_v,jv),jk,cblk_v(jc_v,jv))
-          ENDDO ! jk
-        ENDDO ! jc_v
-        avg_v(:,jv) = avg_v(:,jv)/REAL(nbcells_v, KIND=wp)
-
-      ENDDO ! jv
-
-      DO jk = 1, nlev
-        var_tmp(jc,jk,jb) = SUM(avg_v(jk,:))/3._wp
-      ENDDO ! jk
-
-    ENDDO ! jc
-
-  ENDDO ! jb
-
-!$OMP END DO
-!$OMP END PARALLEL
-
-  var(:,:,i_startblk:i_endblk) = var_tmp(:,:,i_startblk:i_endblk)
-
-  ENDIF
-
-END SUBROUTINE smooth_hori
 !!
 !!-------------------------------------------------------------------------
 !!
