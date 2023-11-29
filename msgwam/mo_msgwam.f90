@@ -4370,9 +4370,13 @@ SUBROUTINE tendency(p_patch, p_metrics, p_int_state, rho, temp, theta, p_fld)
   ! Allocate auxiliary fields
   ALLOCATE( ufl_hor_e  (nproma,nlev,nblks_e), &
             vfl_hor_e  (nproma,nlev,nblks_e), &
+            upfl_hor_e (nproma,nlev,nblks_e), &
+            vpfl_hor_e (nproma,nlev,nblks_e), &
             ptfl_hor_e (nproma,nlev,nblks_e), &
             ufldiv_hor (nproma,nlev,nblks_c), &
             vfldiv_hor (nproma,nlev,nblks_c), &
+            upfldiv_hor(nproma,nlev,nblks_c), &
+            vpfldiv_hor(nproma,nlev,nblks_c), &
             ptfldiv_hor(nproma,nlev,nblks_c), &
             STAT=ist                        )
   IF (ist /= success) CALL finish ('tendency', 'Allocation of auxiliary fields failed!')
@@ -4384,6 +4388,7 @@ SUBROUTINE tendency(p_patch, p_metrics, p_int_state, rho, temp, theta, p_fld)
 
   ! Initialize horizontal fluxes at cell edges
   ufl_hor_e = 0._wp ; vfl_hor_e = 0._wp ; ptfl_hor_e = 0._wp
+  upfl_hor_e = 0._wp ; vpfl_hor_e = 0._wp
 
   ! Calculate normal horizontal fluxes at edge midpoints
   ! Exclude boundary interpolation zone of nested domains
@@ -4511,14 +4516,14 @@ SUBROUTINE tendency(p_patch, p_metrics, p_int_state, rho, temp, theta, p_fld)
                p_patch,               & !in
                p_int_state,           & !in
                p_int_state%c_bln_avg, & !in
-               upfldiv_hor)              !out
+               upfldiv_hor)             !out
 
   ! Calculate horizontal divergence of v pflux
   CALL div_avg(vpfl_hor_e,            & !in
                p_patch,               & !in
                p_int_state,           & !in
                p_int_state%c_bln_avg, & !in
-               vpfldiv_hor)              !out
+               vpfldiv_hor)             !out
 
   ! Calculate horizontal divergence of pot temperature flux
   !CALL div(vec_e     = ptfl_hor_e,  & !in
