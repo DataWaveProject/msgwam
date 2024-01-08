@@ -250,39 +250,12 @@ MODULE mo_setup_msgwam_interface
       &  ctmfl_specc_cgw(:,:,:) ,  & !! momentum flux spectra, absolute
       &  ctmfl_spec0_cgw(:,:,:) ,  & !! momentum flux spectra, absolute
       &  ctmfl_spec1_cgw(:,:,:) ,  & !! momentum flux spectra, absolute
-      &  apmfl_cgw      (:,:,:) ,  & !! pseudomomentum flux, absolute
-      &  amfl_cgw       (:,:,:) ,  & !! momentum flux, absolute
-      &  aptfl_cgw      (:,:,:) ,  & !! potential temperature flux, absolute
-      &  mfl_cgw_e        (:,:,:) ,  & !! momentum flux, eastward
-      &  mfl_cgw_w        (:,:,:) ,  & !! momentum flux, westward
-      &  mfl_cgw_n        (:,:,:) ,  & !! momentum flux, northward
-      &  mfl_cgw_s        (:,:,:) ,  & !! momentum flux, southward
-      &  pmfl_cgw_e       (:,:,:) ,  & !! pseudo momentum flux, eastward
-      &  pmfl_cgw_w       (:,:,:) ,  & !! pseudo momentum flux, westward
-      &  pmfl_cgw_n       (:,:,:) ,  & !! pseudo momentum flux, northward
-      &  pmfl_cgw_s       (:,:,:) ,  & !! pseudo momentum flux, southward
-      &  wafl_cgw_u       (:,:,:) ,  & !! wave action flux, (radially) upward           (Pa m)
-      &  wafl_cgw_d       (:,:,:) ,  & !! wave action flux, (radially) downward         (Pa m)
-      &  wafl_cgw_e       (:,:,:) ,  & !! wave action flux, eastward                    (Pa m)
-      &  wafl_cgw_w       (:,:,:) ,  & !! wave action flux, westward                    (Pa m)
-      &  wafl_cgw_n       (:,:,:) ,  & !! wave action flux, northward                   (Pa m)
-      &  wafl_cgw_s       (:,:,:) ,  & !! wave action flux, southward                   (Pa m)
-      &  ptfl_cgw_e       (:,:,:) ,  & !! theta flux, eastward
-      &  ptfl_cgw_w       (:,:,:) ,  & !! theta flux, westward
-      &  ptfl_cgw_n       (:,:,:) ,  & !! theta flux, northward
-      &  ptfl_cgw_s       (:,:,:) ,  & !! theta flux, southward
-      &  energy_cgw       (:,:,:) ,  & !! energy
-      &  energy_p_cgw     (:,:,:) ,  & !! potential energy
-      &  action_cgw_1     (:,:,:) ,  & !! action
-      &  action_cgw_2     (:,:,:) ,  & !! action
-      &  action_cgw_3     (:,:,:) ,  & !! action
-      &  action_cgw_4     (:,:,:) ,  & !! action
-      &  action_cgw_5     (:,:,:) ,  & !! action
       &  test_1_cgw       (:,:,:) ,  & !!
       &  test_2_cgw       (:,:,:) ,  & !!
       &  test_cgw         (:,:,:) ,  & !! temporary
       &  ll_dz_cgw        (:,:)   ,  &
-      &  ml_dz_cgw        (:,:)
+      &  ml_dz_cgw        (:,:)   ,  &
+      &  active_rays_mgm  (:,:)        ! number of active background rays
 
     INTEGER, POINTER              &
 #ifdef HAVE_FC_ATTRIBUTE_CONTIGUOUS
@@ -294,9 +267,7 @@ MODULE mo_setup_msgwam_interface
       &  mtop_con_cgw  (:,:)   ,  & !< cloud top  level index
       &  ktype_cgw     (:,:)   ,  & !< Type of convection
       &  ll_k_cgw      (:,:)   ,  &
-      &  ml_k_cgw      (:,:)   ,  &
-      &  active_rays_mgm(:,:)  ,  & ! number of active background rays
-      &  active_rays_cgw(:,:)       ! number of active convective rays
+      &  ml_k_cgw      (:,:)
 
     REAL(wp), POINTER            &
 #ifdef HAVE_FC_ATTRIBUTE_CONTIGUOUS
@@ -1213,22 +1184,6 @@ SUBROUTINE setup_msgwam(n_dom,p_patch)
         &  is_variable_in_output(var_name='gwd_conv_u') .OR.  &
         &  is_variable_in_output(var_name='gwd_conv_v') .OR.  &
         &  is_variable_in_output(var_name='gwd_conv_t')
-
-      lcalc_flux_4dir_cv(jg) =  &
-        &  is_variable_in_output(var_name='mfl_cgw_e')  .OR.  &
-        &  is_variable_in_output(var_name='mfl_cgw_w')  .OR.  &
-        &  is_variable_in_output(var_name='mfl_cgw_n')  .OR.  &
-        &  is_variable_in_output(var_name='mfl_cgw_s')  .OR.  &
-        &  is_variable_in_output(var_name='wafl_cgw_u') .OR.  &
-        &  is_variable_in_output(var_name='wafl_cgw_d') .OR.  &
-        &  is_variable_in_output(var_name='wafl_cgw_e') .OR.  &
-        &  is_variable_in_output(var_name='wafl_cgw_w') .OR.  &
-        &  is_variable_in_output(var_name='wafl_cgw_n') .OR.  &
-        &  is_variable_in_output(var_name='wafl_cgw_s') .OR.  &
-        &  is_variable_in_output(var_name='ptfl_cgw_e') .OR.  &
-        &  is_variable_in_output(var_name='ptfl_cgw_w') .OR.  &
-        &  is_variable_in_output(var_name='ptfl_cgw_n') .OR.  &
-        &  is_variable_in_output(var_name='ptfl_cgw_s')
  
     END IF
 
@@ -2977,203 +2932,6 @@ SUBROUTINE new_field_list( k_jg, klev, kblks, listname, p_list, p_var )
       ENDDO
     ENDDO
 
-    !       apmfl_cgw(nproma,nlev,nblks_c)
-    cf_desc    = t_cf_var('apmfl_cgw', 'Pa', 'cgw absolute pseudomomentum fluxes' , datatype_flt)
-    grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
-    CALL add_var( p_list, 'apmfl_cgw', p_var%apmfl_cgw,                           &
-      &           GRID_UNSTRUCTURED_CELL, ZA_REFERENCE_HALF, cf_desc, grib2_desc, &
-      &           ldims=shape3dkp1, lrestart=.FALSE., loutput=.TRUE. )
-
-    !       amfl_cgw(nproma,nlev,nblks_c)
-    cf_desc    = t_cf_var('amfl_cgw', 'Pa', 'cgw absolute momentum fluxes' , datatype_flt)
-    grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
-    CALL add_var( p_list, 'amfl_cgw', p_var%amfl_cgw,                             &
-      &           GRID_UNSTRUCTURED_CELL, ZA_REFERENCE_HALF, cf_desc, grib2_desc, &
-      &           ldims=shape3dkp1, lrestart=.FALSE., loutput=.TRUE. )
-
-    !       mfl_cgw_e(nproma,nlev,nblks_c)
-    cf_desc    = t_cf_var('cgw_mfl_E', 'Pa', 'cgw eastward momentum fluxes' , datatype_flt)
-    grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
-    CALL add_var( p_list, 'mfl_cgw_e', p_var%mfl_cgw_e,                           &
-      &           GRID_UNSTRUCTURED_CELL, ZA_REFERENCE_HALF, cf_desc, grib2_desc, &
-      &           ldims=shape3dkp1, lrestart=.FALSE., loutput=.TRUE. )
-
-    !       mfl_cgw_w(nproma,nlev,nblks_c)
-    cf_desc    = t_cf_var('cgw_mfl_W', 'Pa', 'cgw westward momentum fluxes' , datatype_flt)
-    grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
-    CALL add_var( p_list, 'mfl_cgw_w', p_var%mfl_cgw_w,                           &
-      &           GRID_UNSTRUCTURED_CELL, ZA_REFERENCE_HALF, cf_desc, grib2_desc, &
-      &           ldims=shape3dkp1, lrestart=.FALSE., loutput=.TRUE. )
-
-    !       mfl_cgw_n(nproma,nlev,nblks_c)
-    cf_desc    = t_cf_var('cgw_mfl_N', 'Pa', 'cgw northward momentum fluxes', datatype_flt)
-    grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
-    CALL add_var( p_list, 'mfl_cgw_n', p_var%mfl_cgw_n,                           &
-      &           GRID_UNSTRUCTURED_CELL, ZA_REFERENCE_HALF, cf_desc, grib2_desc, &
-      &           ldims=shape3dkp1, lrestart=.FALSE., loutput=.TRUE. )
-
-    !       mfl_cgw_s(nproma,nlev,nblks_c)
-    cf_desc    = t_cf_var('cgw_mfl_S', 'Pa', 'cgw southward momentum fluxes', datatype_flt)
-    grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
-    CALL add_var( p_list, 'mfl_cgw_s', p_var%mfl_cgw_s,                           &
-      &           GRID_UNSTRUCTURED_CELL, ZA_REFERENCE_HALF, cf_desc, grib2_desc, &
-      &           ldims=shape3dkp1, lrestart=.FALSE., loutput=.TRUE. )
-
-    !       pmfl_cgw_e(nproma,nlev,nblks_c)
-    cf_desc    = t_cf_var('cgw_pmfl_E', 'Pa', 'cgw eastward pseudo momentum fluxes' , datatype_flt)
-    grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
-    CALL add_var( p_list, 'pmfl_cgw_e', p_var%pmfl_cgw_e,                           &
-      &           GRID_UNSTRUCTURED_CELL, ZA_REFERENCE_HALF, cf_desc, grib2_desc, &
-      &           ldims=shape3dkp1, lrestart=.FALSE., loutput=.TRUE. )
-
-    !       pmfl_cgw_w(nproma,nlev,nblks_c)
-    cf_desc    = t_cf_var('cgw_pmfl_W', 'Pa', 'cgw westward pseudo momentum fluxes' , datatype_flt)
-    grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
-    CALL add_var( p_list, 'pmfl_cgw_w', p_var%pmfl_cgw_w,                           &
-      &           GRID_UNSTRUCTURED_CELL, ZA_REFERENCE_HALF, cf_desc, grib2_desc, &
-      &           ldims=shape3dkp1, lrestart=.FALSE., loutput=.TRUE. )
-
-    !       pmfl_cgw_n(nproma,nlev,nblks_c)
-    cf_desc    = t_cf_var('cgw_pmfl_N', 'Pa', 'cgw northward pseudo momentum fluxes', datatype_flt)
-    grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
-    CALL add_var( p_list, 'pmfl_cgw_n', p_var%pmfl_cgw_n,                           &
-      &           GRID_UNSTRUCTURED_CELL, ZA_REFERENCE_HALF, cf_desc, grib2_desc, &
-      &           ldims=shape3dkp1, lrestart=.FALSE., loutput=.TRUE. )
-
-    !       pmfl_cgw_s(nproma,nlev,nblks_c)
-    cf_desc    = t_cf_var('cgw_pmfl_S', 'Pa', 'cgw southward pseudo momentum fluxes', datatype_flt)
-    grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
-    CALL add_var( p_list, 'pmfl_cgw_s', p_var%pmfl_cgw_s,                           &
-      &           GRID_UNSTRUCTURED_CELL, ZA_REFERENCE_HALF, cf_desc, grib2_desc, &
-      &           ldims=shape3dkp1, lrestart=.FALSE., loutput=.TRUE. )
-
-    ! wafl_cgw_u(nproma,nlev,nblks_c)
-    cf_desc    = t_cf_var('wafl_cgw_U', 'Pa m', 'upward wave action fluxes', datatype_flt)
-    grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
-    CALL add_var( p_list, 'wafl_cgw_u', p_var%wafl_cgw_u,           &
-          & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE_HALF, cf_desc, grib2_desc,     &
-          & ldims=shape3dkp1, lrestart=.FALSE., loutput=.TRUE.)
-
-    ! wafl_cgw_d(nproma,nlev,nblks_c)
-    cf_desc    = t_cf_var('wafl_cgw_D', 'Pa m', 'downward wave action fluxes', datatype_flt)
-    grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
-    CALL add_var( p_list, 'wafl_cgw_d', p_var%wafl_cgw_d,           &
-          & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE_HALF, cf_desc, grib2_desc,     &
-          & ldims=shape3dkp1, lrestart=.FALSE., loutput=.TRUE.)
-
-    ! wafl_cgw_e(nproma,nlev,nblks_c)
-    cf_desc    = t_cf_var('wafl_cgw_E', 'Pa m', 'eastward wave action fluxes', datatype_flt)
-    grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
-    CALL add_var( p_list, 'wafl_cgw_e', p_var%wafl_cgw_e,           &
-          & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc,     &
-          & ldims=shape3d, lrestart=.FALSE., loutput=.TRUE.)
-
-    ! wafl_cgw_w(nproma,nlev,nblks_c)
-    cf_desc    = t_cf_var('wafl_cgw_W', 'Pa m', 'westward wave action fluxes', datatype_flt)
-    grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
-    CALL add_var( p_list, 'wafl_cgw_w', p_var%wafl_cgw_w,           &
-          & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc,     &
-          & ldims=shape3d, lrestart=.FALSE., loutput=.TRUE.)
-
-    ! wafl_cgw_n(nproma,nlev,nblks_c)
-    cf_desc    = t_cf_var('wafl_cgw_N', 'Pa m', 'northward wave action fluxes', datatype_flt)
-    grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
-    CALL add_var( p_list, 'wafl_cgw_n', p_var%wafl_cgw_n,           &
-          & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc,     &
-          & ldims=shape3d, lrestart=.FALSE., loutput=.TRUE.)
-
-    ! wafl_cgw_s(nproma,nlev,nblks_c)
-    cf_desc    = t_cf_var('wafl_cgw_S', 'Pa m', 'southward wave action fluxes', datatype_flt)
-    grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
-    CALL add_var( p_list, 'wafl_cgw_s', p_var%wafl_cgw_s,           &
-          & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc,     &
-          & ldims=shape3d, lrestart=.FALSE., loutput=.TRUE.)
-
-    !       aptfl_cgw(nproma,nlev,nblks_c)
-    cf_desc    = t_cf_var('aptfl_cgw', 'Pa K s/m', 'cgw absolute pot temp fluxes' , datatype_flt)
-    grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
-    CALL add_var( p_list, 'aptfl_cgw', p_var%aptfl_cgw,                           &
-      &           GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc, &
-      &           ldims=shape3d, lrestart=.FALSE., loutput=.TRUE. )
-
-    !       ptfl_cgw_e(nproma,nlev,nblks_c)
-    cf_desc    = t_cf_var('cgw_ptfl_E', 'Pa K s/m', 'cgw eastward pot temp fluxes' , datatype_flt)
-    grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
-    CALL add_var( p_list, 'ptfl_cgw_e', p_var%ptfl_cgw_e,                         &
-      &           GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc, &
-      &           ldims=shape3d, lrestart=.FALSE., loutput=.TRUE. )
-
-    !       ptfl_cgw_w(nproma,nlev,nblks_c)
-    cf_desc    = t_cf_var('cgw_ptfl_W', 'Pa K s/m', 'cgw westward pot temp fluxes' , datatype_flt)
-    grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
-    CALL add_var( p_list, 'ptfl_cgw_w', p_var%ptfl_cgw_w,                         &
-      &           GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc, &
-      &           ldims=shape3d, lrestart=.FALSE., loutput=.TRUE. )
-
-    !       ptfl_cgw_n(nproma,nlev,nblks_c)
-    cf_desc    = t_cf_var('cgw_ptfl_N', 'Pa K s/m', 'cgw northward pot temp fluxes', datatype_flt)
-    grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
-    CALL add_var( p_list, 'ptfl_cgw_n', p_var%ptfl_cgw_n,                         &
-      &           GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc, &
-      &           ldims=shape3d, lrestart=.FALSE., loutput=.TRUE. )
-
-    !       ptfl_cgw_s(nproma,nlev,nblks_c)
-    cf_desc    = t_cf_var('cgw_ptfl_S', 'Pa K s/m', 'cgw southward pot temp fluxes', datatype_flt)
-    grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
-    CALL add_var( p_list, 'ptfl_cgw_s', p_var%ptfl_cgw_s,                         &
-      &           GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc, &
-      &           ldims=shape3d, lrestart=.FALSE., loutput=.TRUE. )
-
-    !       energy_cgw(nproma,nlev,nblks_c)
-    cf_desc    = t_cf_var('energy_cgw', 'Pa', 'cgw energy', datatype_flt)
-    grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
-    CALL add_var( p_list, 'energy_cgw', p_var%energy_cgw,                         &
-      &           GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc, &
-      &           ldims=shape3d, lrestart=.FALSE., loutput=.TRUE. )
-
-    !       energy_p_cgw(nproma,nlev,nblks_c)
-    cf_desc    = t_cf_var('energy_p_cgw', 'Pa', 'cgw potential energy', datatype_flt)
-    grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
-    CALL add_var( p_list, 'energy_p_cgw', p_var%energy_p_cgw,                     &
-      &           GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc, &
-      &           ldims=shape3d, lrestart=.FALSE., loutput=.TRUE. )
-
-    ! Wave action (various)
-    !       action_cgw_1(nproma,nlev,nblks_c)
-    cf_desc    = t_cf_var('action_cgw_1', 'kg/m/s', 'cgw action', datatype_flt)
-    grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
-    CALL add_var( p_list, 'action_cgw_1', p_var%action_cgw_1,                         &
-      &           GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc, &
-      &           ldims=shape3d, lrestart=.FALSE., loutput=.TRUE. )
-    
-    !       action_cgw_2(nproma,nlev,nblks_c)
-    cf_desc    = t_cf_var('action_cgw_2', 'kg/m/s', 'cgw action', datatype_flt)
-    grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
-    CALL add_var( p_list, 'action_cgw_2', p_var%action_cgw_2,                         &
-      &           GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc, &
-      &           ldims=shape3d, lrestart=.FALSE., loutput=.TRUE. )
-    
-    !       action_cgw_3(nproma,nlev,nblks_c)
-    cf_desc    = t_cf_var('action_cgw_3', 'kg/m/s', 'cgw action', datatype_flt)
-    grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
-    CALL add_var( p_list, 'action_cgw_3', p_var%action_cgw_3,                         &
-      &           GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc, &
-      &           ldims=shape3d, lrestart=.FALSE., loutput=.TRUE. )
-    
-    !       action_cgw_4(nproma,nlev,nblks_c)
-    cf_desc    = t_cf_var('action_cgw_4', 'kg/m/s', 'cgw action', datatype_flt)
-    grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
-    CALL add_var( p_list, 'action_cgw_4', p_var%action_cgw_4,                         &
-      &           GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc, &
-      &           ldims=shape3d, lrestart=.FALSE., loutput=.TRUE. )
-    
-    !       action_cgw_5(nproma,nlev,nblks_c)
-    cf_desc    = t_cf_var('action_cgw_5', 'kg/m/s', 'cgw action', datatype_flt)
-    grib2_desc = grib2_var(192, 128, 220, ibits, GRID_UNSTRUCTURED, GRID_CELL)
-    CALL add_var( p_list, 'action_cgw_5', p_var%action_cgw_5,                         &
-      &           GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc, &
-      &           ldims=shape3d, lrestart=.FALSE., loutput=.TRUE. )
-
     !       ll_k_cgw (nproma,nblks_c)
     cf_desc    = t_cf_var('ll_k_cgw' , '', 'cgw ll k'          , datatype_flt)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
@@ -3279,14 +3037,7 @@ SUBROUTINE new_field_list( k_jg, klev, kblks, listname, p_list, p_var )
   grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
   CALL add_var( p_list, 'active_rays_mgm', p_var%active_rays_mgm, &
               & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
-              & ldims=shape2d, lrestart=.FALSE., loutput=.TRUE.)       
-
-  !        active_rays_cgw(nproma,nblks)
-  cf_desc    = t_cf_var('active_rays_cgw', 'N/A', 'number of active convective rays', datatype_flt)
-  grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
-  CALL add_var( p_list, 'active_rays_cgw', p_var%active_rays_cgw, &
-              & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
-              & ldims=shape2d, lrestart=.FALSE., loutput=.TRUE.)
+              & ldims=shape2d, lrestart=.FALSE., loutput=.TRUE., initval=0._wp)       
 
 END SUBROUTINE new_field_list
 !!

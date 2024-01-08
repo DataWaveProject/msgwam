@@ -113,7 +113,7 @@ SUBROUTINE project_diagnostics(nlev, i_startidx, i_endidx, jray_start, jray_end,
     REAL(wp),             INTENT(OUT) :: energy(:,:)  
     REAL(wp),             INTENT(OUT) :: energy_p(:,:)
     REAL(wp),             INTENT(OUT) :: waction(:,:) 
-    INTEGER,              INTENT(OUT) :: active_rays(:)
+    REAL(wp),             INTENT(OUT) :: active_rays(:)
 
     INTEGER                      :: nlevp1
     INTEGER                      :: jk, jc
@@ -155,7 +155,7 @@ SUBROUTINE project_diagnostics(nlev, i_startidx, i_endidx, jray_start, jray_end,
     ! Initialize outputs
     apmflux(:, :) = 0._wp ; amflux(:, :) = 0._wp ; aptflux(:, :) = 0._wp ;
     energy(:, :) = 0._wp  ; energy_p(:, :) = 0._wp ; waction(:, :) = 0._wp
-    active_rays(:) = 0
+    active_rays(:) = 0._wp
 
     ! Initialize fluxes in E, W, N, S directions
     mflux_e(:,:) = 0._wp  ; mflux_w(:,:) = 0._wp
@@ -186,7 +186,7 @@ SUBROUTINE project_diagnostics(nlev, i_startidx, i_endidx, jray_start, jray_end,
 
             IF (iexist(jc,jray) == 0) CYCLE
 
-            active_rays(jc) = active_rays(jc) + 1
+            active_rays(jc) = active_rays(jc) + 1._wp
 
             ! Define (effective) ray volume edges
             zray_u = zray(jc, jray) + 0.5_wp*dzray(jc, jray)

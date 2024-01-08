@@ -133,7 +133,7 @@ SUBROUTINE nwp_msgwam_interface( dt_call,                   & !>input
           &  = p_msgwam(jg)% ddt_u_gwd_pmom_mgm(i_startidx:i_endidx,:,jb)
         prm_nwp_tend%        ddt_v_gwd         (i_startidx:i_endidx,:,jb)  &
           &  = p_msgwam(jg)% ddt_v_gwd_pmom_mgm(i_startidx:i_endidx,:,jb)
-        prm_nwp_tend%        ddt_temp_drag(i_startidx:i_endidx,:,jb) = 0
+        ! prm_nwp_tend%        ddt_temp_drag(i_startidx:i_endidx,:,jb) = 0._wp
       ENDDO
     ELSE
       DO jb = i_startblk, i_endblk

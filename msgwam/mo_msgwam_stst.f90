@@ -293,13 +293,6 @@ SUBROUTINE gwdrag_msgwam_stst ( dt_call,                   & ! input
                         lcalc_flux_4dir_bg = lcalc_flux_4dir_bg(jg),     & ! flag to calc. 4-fluxes   (in)
                         uwflux_cv     = uwflux_cgw(:,:),                 & ! uw mometum flux          (out)
                         vwflux_cv     = vwflux_cgw(:,:),                 & ! vw mometum flux          (out)
-                        energy_cv     = p_fld% energy_cgw  (:,:,jb),     & ! wave energy      : CGW   (out)
-                        apmflux_cv    = p_fld% apmfl_cgw   (:,:,jb),     & ! abs momentum flux: CGW   (out)
-                        energy_p_cv   = p_fld% energy_p_cgw(:,:,jb),     & ! wave pot. energy : CGW   (out)
-                        pmflux_e_cv   = p_fld% mfl_cgw_e  (:,:,jb),      & ! eastward flux    : CGW   (out)
-                        pmflux_w_cv   = p_fld% mfl_cgw_w  (:,:,jb),      & ! westward flux    : CGW   (out)
-                        pmflux_n_cv   = p_fld% mfl_cgw_n  (:,:,jb),      & ! northward flux   : CGW   (out)
-                        pmflux_s_cv   = p_fld% mfl_cgw_s  (:,:,jb),      & ! southward flux   : CGW   (out)
                         uwflux_bg     = p_fld% uwfl_mgm    (:,:,jb),     & ! uw mometum flux          (out)
                         vwflux_bg     = p_fld% vwfl_mgm    (:,:,jb),     & ! vw mometum flux          (out)
                         energy_bg     = p_fld% energy_mgm  (:,:,jb),     & ! wave energy              (out)
@@ -324,46 +317,13 @@ SUBROUTINE gwdrag_msgwam_stst ( dt_call,                   & ! input
         ! In this case saturation is calculated for each GW source 
         ! (background, convective) separately
 
-        IF ( gws_conv_config%n_source(jg) > 0 ) THEN
-          ! Saturation for GWs from convective sources
-          CALL saturation_mono(nlev  = nlev,                            & ! no. of full levels       (in)
-                          i_startidx = i_startidx,                      & ! first index of the block (in)
-                          i_endidx   = i_endidx,                        & ! last index of the block  (in)
-                          jray_start = jray_offset_cv(jg)+1,            &
-                          jray_end   = jray_offset_cv(jg)+nrays_cv(jg), &
-                          dz         = p_metrics%ddqz_z_full(:,:,jb),   & ! full layer thickness     (in)
-                          kray       = p_ray(jg)%k(:,:,1),              & ! horiz (lon) wavenumber   (in)
-                          lray       = p_ray(jg)%l(:,:,1),              & ! horiz (lat) wavenumber   (in)
-                          mray       = p_ray(jg)%m(:,:,1),              & ! vertical wavenumber      (in)
-                          dens       = p_ray(jg)%wadens(:,:,1),         & ! wave action density      (in)
-                          iexist     = p_ray(jg)%iexist(:,:,1),         & ! existence of ray         (in)
-                          u_half     = u_half(:,:),                     & ! zonal wind (half levels) (in)
-                          v_half     = v_half(:,:),                     & ! merid wind (half levels) (in)
-                          bvf2       = bvf2(:,:),                       & ! Brunt-Väisala freq**2    (in)
-                          gammash2   = gammash2(:,:),                   & ! inverse pinc scale height(in)
-                          fc         = p_patch%cells%f_c(:,jb),         & ! Coriolis parameter       (in)
-                          rho        = rho_half(:,:),                   & ! rho at half levels       (in)
-                          kvisc      = kvisc(:,:),                      & ! Kinematic viscosity      (in)
-                          lcalc_flux_4dir = lcalc_flux_4dir_cv(jg),     & ! flag to calc. 4-fluxes   (in)
-                          uwflux     = uwflux_cgw(:,:),                 & ! uw mometum flux          (out)
-                          vwflux     = vwflux_cgw(:,:),                 & ! vw mometum flux          (out)
-                          energy     = p_fld% energy_cgw  (:,:,jb),     & ! wave energy      : CGW   (out)
-                          apmflux    = p_fld% apmfl_cgw   (:,:,jb),     & ! abs momentum flux: CGW   (out)
-                          energy_p   = p_fld% energy_p_cgw(:,:,jb),     & ! wave pot. energy : CGW   (out)
-                          pmflux_e   = p_fld% mfl_cgw_e  (:,:,jb),      & ! eastward flux    : CGW   (out)
-                          pmflux_w   = p_fld% mfl_cgw_w  (:,:,jb),      & ! westward flux    : CGW   (out)
-                          pmflux_n   = p_fld% mfl_cgw_n  (:,:,jb),      & ! northward flux   : CGW   (out)
-                          pmflux_s   = p_fld% mfl_cgw_s  (:,:,jb),      & ! southward flux   : CGW   (out)
-                          gw_flag    = p_fld% flag_cgw(:,jb)            ) ! flag for CGW grid        (in)
-        END IF
-
         IF (nrays_add_bg(jg) /= 0) THEN
           ! Saturation for GWs from background sources
           CALL saturation_mono(nlev  = nlev,                            & ! no. of full levels       (in)
                           i_startidx = i_startidx,                      & ! first index of the block (in)
                           i_endidx   = i_endidx,                        & ! last index of the block  (in)
-                          jray_start = jray_offset_bg(jg)+1,            &
-                          jray_end   = jray_offset_bg(jg)+nrays_bg(jg), &
+                          jray_start = 1,                               &
+                          jray_end   = nrays(jg),                       &
                           dz         = p_metrics%ddqz_z_full(:,:,jb),   & ! full layer thickness     (in)
                           kray       = p_ray(jg)%k(:,:,1),              & ! horiz (lon) wavenumber   (in)
                           lray       = p_ray(jg)%l(:,:,1),              & ! horiz (lat) wavenumber   (in)
@@ -404,8 +364,6 @@ SUBROUTINE gwdrag_msgwam_stst ( dt_call,                   & ! input
     IF ( gws_conv_config%n_source(jg) > 0 ) THEN
       p_fld% uwfl_mgm(:,:,jb) = p_fld% uwfl_mgm(:,:,jb) + uwflux_cgw(:,:)
       p_fld% vwfl_mgm(:,:,jb) = p_fld% vwfl_mgm(:,:,jb) + vwflux_cgw(:,:)
-      p_fld% energy_mgm(:,:,jb) = p_fld% energy_mgm(:,:,jb)  &
-        &                       + p_fld% energy_cgw(:,:,jb)
     END IF
 
     ! Apply a sponge on fluxes 
@@ -1268,7 +1226,7 @@ END SUBROUTINE init_gw_conv
 SUBROUTINE saturation(nlev,i_startidx,i_endidx,jray_start_cv,jray_end_cv,jray_start_bg,jray_end_bg,&
                       dz,kray,lray,mray,dens,iexist,&
                       u_half,v_half,bvf2,gammash2,fc,rho,kvisc,flag_cgw,lcalc_flux_4dir_cv,lcalc_flux_4dir_bg,&
-                      uwflux_cv,vwflux_cv,energy_cv,apmflux_cv,energy_p_cv,pmflux_e_cv,pmflux_w_cv,pmflux_n_cv,pmflux_s_cv,&
+                      uwflux_cv,vwflux_cv,&
                       uwflux_bg,vwflux_bg,energy_bg,apmflux_bg,energy_p_bg,pmflux_e_bg,pmflux_w_bg,pmflux_n_bg,pmflux_s_bg,&
                       kd,kd2,ld,ld2,md,md2,cgz_diag,mB2,mB2_aft)
   INTEGER,       INTENT(IN)    :: nlev
@@ -1293,11 +1251,6 @@ SUBROUTINE saturation(nlev,i_startidx,i_endidx,jray_start_cv,jray_end_cv,jray_st
   LOGICAL,       INTENT(IN)    :: lcalc_flux_4dir_bg
   REAL(wp),      INTENT(OUT)   :: uwflux_cv(:,:)
   REAL(wp),      INTENT(OUT)   :: vwflux_cv(:,:)
-  REAL(wp),      INTENT(OUT)   :: energy_cv(:,:)
-  REAL(wp),      INTENT(OUT)   :: apmflux_cv(:,:)
-  REAL(wp),      INTENT(OUT)   :: energy_p_cv(:,:)
-  REAL(wp),      INTENT(OUT)   :: pmflux_e_cv(:,:), pmflux_w_cv(:,:)
-  REAL(wp),      INTENT(OUT)   :: pmflux_n_cv(:,:), pmflux_s_cv(:,:)
   REAL(wp),      INTENT(OUT)   :: uwflux_bg(:,:)
   REAL(wp),      INTENT(OUT)   :: vwflux_bg(:,:)
   REAL(wp),      INTENT(OUT)   :: energy_bg(:,:)
@@ -1374,12 +1327,7 @@ SUBROUTINE saturation(nlev,i_startidx,i_endidx,jray_start_cv,jray_end_cv,jray_st
   ! Initialization (nproma,nlevp1)
 
   IF ( gws_conv_config%n_source(jg) > 0 ) THEN
-    uwflux_cv(:,:) = 0._wp   ;  vwflux_cv(:,:) = 0._wp  ;  energy_cv(:,:) = 0._wp
-    apmflux_cv(:,:) = 0._wp  ;  energy_p_cv(:,:) = 0._wp
-    IF ( lcalc_flux_4dir_cv ) THEN
-      pmflux_e_cv(:,:) = 0._wp  ;  pmflux_w_cv(:,:) = 0._wp
-      pmflux_n_cv(:,:) = 0._wp  ;  pmflux_s_cv(:,:) = 0._wp
-    END IF
+    uwflux_cv(:,:) = 0._wp   ;  vwflux_cv(:,:) = 0._wp
   END IF
 
   IF (nrays_add_bg(jg) /= 0) THEN
@@ -1670,33 +1618,12 @@ SUBROUTINE saturation(nlev,i_startidx,i_endidx,jray_start_cv,jray_end_cv,jray_st
           &    *wadflxprof(jray_start_cv:jray_end_cv,jk)
         uwflux_cv(jc,jk) = SUM(intgcgz_k(jray_start_cv:jray_end_cv,jk))
         vwflux_cv(jc,jk) = SUM(intgcgz_l(jray_start_cv:jray_end_cv,jk))
-        energy_cv(jc,jk) = SUM(intgomega(jray_start_cv:jray_end_cv,jk))
-      ENDDO 
-      DO jk = 2, nlev
-        apmflux_cv (jc,jk) = SUM(intgcgz_h  (jray_start_cv:jray_end_cv,jk))
-        energy_p_cv(jc,jk) = SUM(intgomega_p(jray_start_cv:jray_end_cv,jk))
       ENDDO 
 
       ! Upper boundary : no transmission to conserve momentum
       uwflux_cv(jc,1) = 0._wp  ;  vwflux_cv(jc,1) = 0._wp
       ! Lower boundary : vertical flux = 0
       uwflux_cv(jc,nlevp1) = 0._wp  ;  vwflux_cv(jc,nlevp1) = 0._wp
-
-      ! Calculate momentum fluxes for 4 dierctions separately
-      IF ( lcalc_flux_4dir_cv ) THEN
-        DO jray = jray_start_cv, jray_end_cv
-          IF (kray(jc,jray) > 0._wp) THEN
-            DO jk = 2, nlev
-              pmflux_e_cv(jc,jk) = pmflux_e_cv(jc,jk) + intgcgz_k(jray,jk)
-            ENDDO
-          END IF
-          IF (lray(jc,jray) > 0._wp) THEN
-            DO jk = 2, nlev
-              pmflux_n_cv(jc,jk) = pmflux_n_cv(jc,jk) + intgcgz_l(jray,jk)
-            ENDDO
-          END IF
-        ENDDO
-      END IF
     END IF  ! flag_cgw(jc)
 
     IF (nrays_add_bg(jg) /= 0) THEN
@@ -1747,16 +1674,6 @@ SUBROUTINE saturation(nlev,i_startidx,i_endidx,jray_start_cv,jray_end_cv,jray_st
   ! outer loop (jc) end
 
   ! Calculate momentum fluxes for 4 dierctions separately
-  IF ( lcalc_flux_4dir_cv ) THEN
-    DO jk = 2,nlev
-      DO jc = i_startidx, i_endidx
-        pmflux_w_cv(jc,jk) = uwflux_cv(jc,jk) - pmflux_e_cv(jc,jk)
-        pmflux_s_cv(jc,jk) = vwflux_cv(jc,jk) - pmflux_n_cv(jc,jk)
-      ENDDO
-    ENDDO
-  END IF
-
-  ! Calculate momentum fluxes for 4 dierctions separately
   IF ( lcalc_flux_4dir_bg ) THEN
     DO jk = 2,nlev
       DO jc = i_startidx, i_endidx
@@ -1767,16 +1684,6 @@ SUBROUTINE saturation(nlev,i_startidx,i_endidx,jray_start_cv,jray_end_cv,jray_st
   END IF
 
   ! half levels --> full levels for the variables defined there
-  DO jc = i_startidx, i_endidx
-    IF (flag_cgw(jc) > 0) THEN
-      energy_cv  (jc,1) = energy_cv  (jc,2)
-      energy_p_cv(jc,1) = energy_p_cv(jc,2)
-      DO jk = 2, nlev-1
-        energy_cv  (jc,jk) = 0.5_wp*(energy_cv  (jc,jk) + energy_cv  (jc,jk+1))
-        energy_p_cv(jc,jk) = 0.5_wp*(energy_p_cv(jc,jk) + energy_p_cv(jc,jk+1))
-      ENDDO
-    END IF
-  ENDDO
   IF (nrays_add_bg(jg) /= 0) THEN
     DO jc = i_startidx, i_endidx
       ! energy :  half levels --> full levels
@@ -1786,28 +1693,6 @@ SUBROUTINE saturation(nlev,i_startidx,i_endidx,jray_start_cv,jray_end_cv,jray_st
         energy_bg  (jc,jk) = 0.5_wp*(energy_bg  (jc,jk) + energy_bg  (jc,jk+1))
         energy_p_bg(jc,jk) = 0.5_wp*(energy_p_bg(jc,jk) + energy_p_bg(jc,jk+1))
       ENDDO
-    ENDDO
-  END IF
-  IF ( lcalc_flux_4dir_cv ) THEN
-    DO jc = i_startidx, i_endidx
-      pmflux_e_cv(jc,1) = 0.5_wp*pmflux_e_cv(jc,2)
-      pmflux_w_cv(jc,1) = 0.5_wp*pmflux_w_cv(jc,2)
-      pmflux_n_cv(jc,1) = 0.5_wp*pmflux_n_cv(jc,2)
-      pmflux_s_cv(jc,1) = 0.5_wp*pmflux_s_cv(jc,2)
-    ENDDO
-    DO jk = 2, nlev-1
-      DO jc = i_startidx, i_endidx
-        pmflux_e_cv(jc,jk) = 0.5_wp*(pmflux_e_cv(jc,jk) + pmflux_e_cv(jc,jk+1))
-        pmflux_w_cv(jc,jk) = 0.5_wp*(pmflux_w_cv(jc,jk) + pmflux_w_cv(jc,jk+1))
-        pmflux_n_cv(jc,jk) = 0.5_wp*(pmflux_n_cv(jc,jk) + pmflux_n_cv(jc,jk+1))
-        pmflux_s_cv(jc,jk) = 0.5_wp*(pmflux_s_cv(jc,jk) + pmflux_s_cv(jc,jk+1))
-      ENDDO
-    ENDDO
-    DO jc = i_startidx, i_endidx
-      pmflux_e_cv(jc,nlev) = 0.5_wp*pmflux_e_cv(jc,nlev)
-      pmflux_w_cv(jc,nlev) = 0.5_wp*pmflux_w_cv(jc,nlev)
-      pmflux_n_cv(jc,nlev) = 0.5_wp*pmflux_n_cv(jc,nlev)
-      pmflux_s_cv(jc,nlev) = 0.5_wp*pmflux_s_cv(jc,nlev)
     ENDDO
   END IF
   IF ( lcalc_flux_4dir_bg ) THEN
