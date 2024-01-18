@@ -3594,27 +3594,31 @@ SUBROUTINE wave2grid(nlev, i_startidx, i_endidx, jray_start, jray_end,          
   REAL(wp)                     :: K2, Kh2, Kh                       ! Local wave vector squares
   REAL(wp)                     :: omega, omega2                     ! Local intrinsic freqs
   REAL(wp)                     :: cgz                               ! Local vertical group velocity
-  REAL(wp)                     :: freq_factor_om2, freq_factor_fc2  ! frequency factors for momentum fluxes
+  REAL(wp)                     :: cgz_freq_factor_om2               ! Local combined vertical group velocity
   REAL(wp)                     :: a_cgx_ray_jk, a_cgy_ray_jk        ! Local horizontal wave action fluxes (auxiliary)
+  REAL(wp)                     :: a_cgz_ray_jk                      ! Local vertical wave action flux (auxiliary)
+  REAL(wp)                     :: a_cgx_freq_fac_om2_ray_jk         ! Local combined wave action flux (auxiliary)
+  REAL(wp)                     :: a_cgx_freq_fac_fc2_ray_jk         ! Local combined wave action flux (auxiliary)
+  REAL(wp)                     :: a_cgy_freq_fac_om2_ray_jk         ! Local combined wave action flux (auxiliary)
+  REAL(wp)                     :: a_cgy_freq_fac_fc2_ray_jk         ! Local combined wave action flux (auxiliary)
+  REAL(wp)                     :: a_cgz_ray_freq_fac_om2_jk         ! Local combined wave action flux (auxiliary)
   REAL(wp)                     :: m2
   REAL(wp)                     :: K2_p_gam2
   REAL(wp)                     :: a_ray
   REAL(wp)                     :: a_ray_jk
-  REAL(wp)                     :: a_cgz_ray(nlev+1)
-  REAL(wp)                     :: a_cgz_ray_pmom(nlev+1)
-  REAL(wp)                     :: m2_p_gam2(nlev+1)
-  REAL(wp)                     :: ptf_x_ray(nlev)
-  REAL(wp)                     :: ptf_y_ray(nlev)
-  REAL(wp)                     :: mf_xx_ray(nlev)
-  REAL(wp)                     :: mf_xy_ray(nlev)     ! identical for pseudo-momentum and momentum fluxes
-  REAL(wp)                     :: mf_xz_ray(nlev+1)
-  REAL(wp)                     :: mf_yy_ray(nlev)
-  REAL(wp)                     :: mf_yz_ray(nlev+1)
-  REAL(wp)                     :: pmf_xx_ray(nlev)
-  REAL(wp)                     :: pmf_xz_ray(nlev+1)
-  REAL(wp)                     :: pmf_yy_ray(nlev)
-  REAL(wp)                     :: pmf_yz_ray(nlev+1)
-  REAL(wp)                     :: fact_grid(nproma, nlev)
+  REAL(wp)                     :: m2_p_gam2
+  REAL(wp)                     :: ptf_x_ray
+  REAL(wp)                     :: ptf_y_ray
+  REAL(wp)                     :: mf_xx_ray
+  REAL(wp)                     :: mf_xy_ray   ! identical for pseudo-momentum and momentum fluxes
+  REAL(wp)                     :: mf_xz_ray
+  REAL(wp)                     :: mf_yy_ray
+  REAL(wp)                     :: mf_yz_ray
+  REAL(wp)                     :: pmf_xx_ray
+  REAL(wp)                     :: pmf_xz_ray
+  REAL(wp)                     :: pmf_yy_ray
+  REAL(wp)                     :: pmf_yz_ray
+  REAL(wp)                     :: fact_grid
 
   IF (msg_level >= 12) CALL message('wave2grid', 'MS-GWaM: flux and energy calculation')
 
@@ -3632,7 +3636,7 @@ SUBROUTINE wave2grid(nlev, i_startidx, i_endidx, jray_start, jray_end,          
   !            vertical layer
   !         -- horizontal (vertical) fluxes are calculated on full (half) 
   !            levels
-  !         -- see Bölöni et al. (2021)
+  !         -- see Bölöni et al. (2021) and Voelker et al. (2024)
   !
   ! TODO: 
   !----------------------------------------------------------------------
@@ -3647,11 +3651,11 @@ SUBROUTINE wave2grid(nlev, i_startidx, i_endidx, jray_start, jray_end,          
   vvpflux(:,:) = 0._wp ; vwpflux(:,:) = 0._wp
 
   ! Initialize temporary variables
-  ptf_x_ray(:) = 0._wp  ; ptf_y_ray(:) = 0._wp
-  mf_xx_ray(:) = 0._wp  ; mf_xy_ray(:) = 0._wp  ; mf_xz_ray(:) = 0._wp
-  mf_yy_ray(:) = 0._wp  ; mf_yz_ray(:) = 0._wp
-  pmf_xx_ray(:) = 0._wp ; pmf_xz_ray(:) = 0._wp
-  pmf_yy_ray(:) = 0._wp ; pmf_yz_ray(:) = 0._wp
+  ptf_x_ray = 0._wp  ; ptf_y_ray = 0._wp
+  mf_xx_ray = 0._wp  ; mf_xy_ray = 0._wp  ; mf_xz_ray = 0._wp
+  mf_yy_ray = 0._wp  ; mf_yz_ray = 0._wp
+  pmf_xx_ray = 0._wp ; pmf_xz_ray = 0._wp
+  pmf_yy_ray = 0._wp ; pmf_yz_ray = 0._wp
 
   IF (is_plane_torus) THEN
     r_sq = 1._wp
@@ -3665,152 +3669,140 @@ SUBROUTINE wave2grid(nlev, i_startidx, i_endidx, jray_start, jray_end,          
 
     DO jray = jray_start, jray_end
 
-      IF (iexist(jc,jray) == 0) CYCLE
+      IF (iexist(jc, jray) == 0) CYCLE
 
       ! Define (effective) ray volume edges
-      zray_u = zray(jc,jray)+0.5_wp*dzray(jc,jray)
-      zray_d_eff = zray(jc,jray)-0.5_wp*dzray(jc,jray)
-      IF (specid(jc,jray) < 0) THEN
-        IF (zray_u < z(jc,jk_active(jc,jray)))  CYCLE
-        zray_d_eff = MAX(z(jc,jk_active(jc,jray)),zray_d_eff)
+      zray_u = zray(jc, jray) + 0.5_wp * dzray(jc, jray)
+      zray_d_eff = zray(jc, jray) - 0.5_wp * dzray(jc, jray)
+      IF (specid(jc, jray) < 0) THEN
+        IF (zray_u < z(jc, jk_active(jc, jray)))  CYCLE
+        zray_d_eff = MAX(z(jc, jk_active(jc, jray)), zray_d_eff)
       ENDIF
 
       ! Effective horizontal wavenumber squared
-      Kh2 = kray(jc,jray)**2 + lray(jc,jray)**2
+      Kh2 = kray(jc, jray)**2 + lray(jc, jray)**2
 !     ! Effective horizontal wavenumber
       Kh = SQRT(Kh2)
       ! Vertical wavenumber squared
-      m2 = mray(jc,jray)**2
+      m2 = mray(jc, jray)**2
       ! Effective total wavenumber squared
       K2 = Kh2 + m2
 
       ! Wave action density (integrated over wavenumber space)
       ! get the fraction of horizontal area that the ray occupies in the cell for accumulating its effect
-      a_ray = dkray(jc,jray)*dlray(jc,jray)*dmray(jc,jray)*dens(jc,jray)  &
-        &    *dlatray(jc,jray)*(dlonray(jc,jray)*coslatray(jc,jray))*r_sq_o_a
+      a_ray = dkray(jc, jray) * dlray(jc, jray) * dmray(jc, jray) * dens(jc, jray)  &
+        &   * dlatray(jc, jray) * (dlonray(jc, jray)*coslatray(jc, jray)) * r_sq_o_a
           !  ^ Here the formular of fractional area should be consistent with other parts
           !    (e.g. source formular, arealonk formular) for conservation and smoothness
 
       !
       ! Calculate horizontal fluxes on full levels
       !
-      DO jk = jkmin_half(jc,jray), jkmax_half(jc,jray) ! jkmin_half > 1, jkmax_half < nlevp1
+      DO jk = jkmin_half(jc, jray), jkmax_half(jc, jray) ! jkmin_half > 1, jkmax_half < nlevp1
         ! Note: jkmin_half and jkmax_half denote the half-level indices above the
         ! top and bottom of the ray volume, respectively. An interval between
         ! two half levels, [jk, jk+1], is centered on the full level jk.
 
         ! dzi: size of ray in z-direction corresponding to the actual full layer
         ! dz : full layer depth
-        dzi_o_dz = (MIN(zray_u,zhalf(jc,jk)) - MAX(zray_d_eff,zhalf(jc,jk+1)))  &
-                   /(zhalf(jc,jk) - zhalf(jc,jk+1))
-!       dzi_o_dz = (MIN(zray_u,zhalf(jc,jk)) - MAX(zray_d_eff,zhalf(jc,jk+1))) / dz(jc,jk)
+        dzi_o_dz = (MIN(zray_u, zhalf(jc, jk)) - MAX(zray_d_eff, zhalf(jc, jk+1))) / (zhalf(jc, jk) - zhalf(jc, jk+1))
 
         ! m^2+gamma^2
-        m2_p_gam2(jk) = m2 + gammash2_full(jc,jk)
+        m2_p_gam2 = m2 + gammash2_full(jc, jk)
 
         ! k^2+ml^2+gamma^2
-        K2_p_gam2 = K2 + gammash2_full(jc,jk)  ! this can be changed to inv_K2_p_gam2
+        K2_p_gam2 = K2 + gammash2_full(jc, jk)  ! this can be changed to inv_K2_p_gam2
 
         ! Intrinsic frequency squared with pinc scale height correction
-        omega2 = (bvf2_full(jc,jk)*Kh2+fc2(jc)*m2_p_gam2(jk))/K2_p_gam2
+        omega2 = (bvf2_full(jc, jk) * Kh2 + fc2(jc) * m2_p_gam2) / K2_p_gam2
 !       omega2 = MAX(fc2(jc),omega2)   ! where N^2 < f^2 : if it happens, this will
 !                                      !   gives zero flux and only small energy
 
         ! Intrinsic frequency with pinc scale height correction
-        omega = branch*SQRT(omega2)
+        omega = branch * SQRT(omega2)
 
         ! Wave action density (integrated over wavenumber space) relevant to the
         ! vertical level with index jk
         a_ray_jk = dzi_o_dz * a_ray
 
-#ifndef __msgwam1d
         ! Calculate potential-temperature flux (rho*u*theta
         ! The grid variables independent of ray variables are multiplied outside the jray loop
-        ptf_x_ray(jk) = lray(jc,jray) * a_ray_jk * mray(jc, jray) / (omega * K2_p_gam2)
-        utflux(jc,jk) = utflux(jc,jk) + ptf_x_ray(jk)
-        ptf_y_ray(jk) = -kray(jc,jray) * a_ray_jk * mray(jc, jray) / (omega * K2_p_gam2)
-        vtflux(jc,jk) = vtflux(jc,jk) + ptf_y_ray(jk)
-        
-        ! frequency factors
-        freq_factor_om2 = omega2 / (omega2 - fc2(jc))
-        freq_factor_fc2 = fc2(jc) / (omega2 - fc2(jc))
+        ptf_x_ray = lray(jc,jray) * a_ray_jk * mray(jc, jray) / (omega * K2_p_gam2)
+        utflux(jc,jk) = utflux(jc,jk) + ptf_x_ray
+        ptf_y_ray = -kray(jc,jray) * a_ray_jk * mray(jc, jray) / (omega * K2_p_gam2)
+        vtflux(jc,jk) = vtflux(jc,jk) + ptf_y_ray
 
         ! wave action fluxes
-        a_cgx_ray_jk = a_ray_jk * kray(jc, jray) * (bvf2_full(jc,jk) - omega2) / (omega * K2_p_gam2)
-        a_cgy_ray_jk = a_ray_jk * lray(jc, jray) * (bvf2_full(jc,jk) - omega2) / (omega * K2_p_gam2)
+        ! the fluxes are calculated both individually and as combined
+        ! quantities to avoid divergent behavior around omega -> f or N
+        a_cgx_ray_jk = a_ray_jk * kray(jc, jray) * (bvf2_full(jc, jk) - omega2) / (omega * K2_p_gam2)
+        a_cgy_ray_jk = a_ray_jk * lray(jc, jray) * (bvf2_full(jc, jk) - omega2) / (omega * K2_p_gam2)
+        a_cgx_freq_fac_om2_ray_jk = a_ray_jk * kray(jc, jray) * omega * m2_p_gam2 / (Kh2 * K2_p_gam2)
+        a_cgx_freq_fac_fc2_ray_jk = a_ray_jk * kray(jc, jray) * fc2(jc) / omega * m2_p_gam2 / (Kh2 * K2_p_gam2)
+        a_cgy_freq_fac_om2_ray_jk = a_ray_jk * lray(jc, jray) * omega * m2_p_gam2 / (Kh2 * K2_p_gam2)
+        a_cgy_freq_fac_fc2_ray_jk = a_ray_jk * lray(jc, jray) * fc2(jc) / omega * m2_p_gam2 / (Kh2 * K2_p_gam2)
 
         ! Calculate momentum flux (rho*u*u)
-        mf_xx_ray(jk)  = freq_factor_om2 * a_cgx_ray_jk * kray(jc, jray) + freq_factor_fc2 * a_cgy_ray_jk * lray(jc, jray)
-        uuflux(jc,jk)  = uuflux(jc,jk)  + mf_xx_ray(jk)
-        pmf_xx_ray(jk) = a_cgx_ray_jk * kray(jc, jray)
-        uupflux(jc,jk) = uupflux(jc,jk) + pmf_xx_ray(jk)
+        mf_xx_ray  = a_cgx_freq_fac_om2_ray_jk * kray(jc, jray) + a_cgy_freq_fac_fc2_ray_jk * lray(jc, jray)
+        uuflux(jc,jk)  = uuflux(jc,jk)  + mf_xx_ray
+        pmf_xx_ray = a_cgx_ray_jk * kray(jc, jray)
+        uupflux(jc,jk) = uupflux(jc,jk) + pmf_xx_ray
 
         ! Calculate momentum flux (rho*u*v)
-        mf_xy_ray(jk) = a_cgx_ray_jk * lray(jc, jray)
-        uvflux(jc,jk) = uvflux(jc,jk) + mf_xy_ray(jk)
-        uvpflux(jc,jk) = uvflux(jc,jk)
+        mf_xy_ray = a_cgx_ray_jk * lray(jc, jray)
+        uvflux(jc,jk) = uvflux(jc,jk) + mf_xy_ray
+        uvpflux(jc,jk) = uvpflux(jc,jk) + mf_xy_ray
 
         ! Calculate momentum flux (rho*v*v)
-        mf_yy_ray(jk) = freq_factor_om2 * a_cgy_ray_jk * lray(jc, jray) + freq_factor_fc2 * a_cgx_ray_jk * kray(jc, jray)
-        vvflux(jc,jk) = vvflux(jc,jk) + mf_yy_ray(jk)
-        pmf_yy_ray(jk) = a_cgy_ray_jk * lray(jc, jray)
-        vvpflux(jc,jk) = vvpflux(jc,jk) + pmf_yy_ray(jk)
-#endif
+        mf_yy_ray = a_cgy_freq_fac_om2_ray_jk * lray(jc, jray) + a_cgx_freq_fac_fc2_ray_jk * kray(jc, jray)
+        vvflux(jc,jk) = vvflux(jc,jk) + mf_yy_ray
+        pmf_yy_ray = a_cgy_ray_jk * lray(jc, jray)
+        vvpflux(jc,jk) = vvpflux(jc,jk) + pmf_yy_ray
 
       ENDDO ! jk
 
       !
       ! Calculate vertical fluxes on half levels
       !
-      DO jk = jkmin_full(jc,jray), jkmax_full(jc,jray)   ! jkmin_full > 1, jkmax_full <= nlev
+      DO jk = jkmin_full(jc, jray), jkmax_full(jc, jray)   ! jkmin_full > 1, jkmax_full <= nlev
         ! Note: jkmin_full and jkmax_full denote the full-level indices below the
         ! top and bottom of the ray volume, respectively. An interval between
         ! two full levels, [jk-1, jk], is (approximately) centered on the half level jk.
 
         ! dzi: size of ray in z-direction corresponding to the actual half layer
         ! dz : layer depth
-        dzi_o_dz = (MIN(zray_u,z(jc,jk-1)) - MAX(zray_d_eff,z(jc,jk)))  &
-                   /(z(jc,jk-1) - z(jc,jk))
+        dzi_o_dz = (MIN(zray_u, z(jc, jk-1)) - MAX(zray_d_eff, z(jc, jk))) / (z(jc, jk-1) - z(jc, jk))
 
-        ! k^2+ml^2+gamma^2
-        K2_p_gam2 = K2 + gammash2_half(jc,jk)  ! this can be changed to inv_K2_p_gam2
+        ! k^2 + l^2 + m^2 + gamma^2
+        K2_p_gam2 = K2 + gammash2_half(jc, jk)  ! this can be changed to inv_K2_p_gam2
 
         ! Intrinsic frequency squared with pinc scale height correction
-        omega2 = (bvf2_half(jc,jk)*Kh2+fc2(jc)*(m2 + gammash2_half(jc,jk)))/K2_p_gam2
+        omega2 = (bvf2_half(jc, jk) * Kh2 + fc2(jc) * (m2 + gammash2_half(jc, jk))) / K2_p_gam2
 !       omega2 = MAX(fc2(jc),omega2)   ! where N^2 < f^2 : if it happens, this will
 !                                      !   gives zero flux and only small energy
+        omega = SQRT(omega2)
 
         ! Vertical group velocity with pinc scale height correction
-        cgz = - branch * mray(jc,jray) * (omega2 - fc2(jc)) / (SQRT(omega2) * K2_p_gam2)
-
-        ! frequency factor
-        freq_factor_om2 = omega2 / (omega2 - fc2(jc))
+        cgz = - branch * mray(jc, jray) * (omega2 - fc2(jc)) / (omega * K2_p_gam2)
+        cgz_freq_factor_om2 = - branch * mray(jc, jray) * omega / K2_p_gam2
 
         ! Wave action times cg relevant to the vertical level with index jk
-        a_cgz_ray(jk) = dzi_o_dz * a_ray * cgz
+        a_cgz_ray_jk = dzi_o_dz * a_ray * cgz
+        a_cgz_ray_freq_fac_om2_jk = dzi_o_dz * a_ray * cgz_freq_factor_om2
 
         ! Calculate momentum flux (rho*u*w)
-        mf_xz_ray(jk) = kray(jc,jray) * a_cgz_ray(jk) * freq_factor_om2
-        uwflux(jc,jk) = uwflux(jc,jk) + mf_xz_ray(jk)
-        pmf_xz_ray(jk) = kray(jc,jray) * a_cgz_ray(jk)
-        uwpflux(jc,jk) = uwpflux(jc,jk) + pmf_xz_ray(jk)
+        mf_xz_ray = kray(jc, jray) * a_cgz_ray_freq_fac_om2_jk
+        uwflux(jc, jk) = uwflux(jc, jk) + mf_xz_ray
+        pmf_xz_ray = kray(jc, jray) * a_cgz_ray_jk
+        uwpflux(jc, jk) = uwpflux(jc, jk) + pmf_xz_ray
 
         ! Calculate momentum flux (rho*v*w)
-        mf_yz_ray(jk) = lray(jc,jray) * a_cgz_ray(jk) * freq_factor_om2
-        vwflux(jc,jk) = vwflux(jc,jk) + mf_yz_ray(jk)
-        pmf_yz_ray(jk) = lray(jc,jray) * a_cgz_ray(jk)
-        vwpflux(jc,jk) = vwpflux(jc,jk) + pmf_yz_ray(jk)
+        mf_yz_ray = lray(jc, jray) * a_cgz_ray_freq_fac_om2_jk
+        vwflux(jc, jk) = vwflux(jc, jk) + mf_yz_ray
+        pmf_yz_ray = lray(jc, jray) * a_cgz_ray_jk
+        vwpflux(jc, jk) = vwpflux(jc, jk) + pmf_yz_ray
 
       ENDDO ! jk
-
-      ! Calculate absolute pseudo-momentum flux and potential energy 
-      ! on full levels (only for diagnostics)
-      !
-      ! clean-up for (mf_xz_ray_full, mf_yz_ray_full)
-      mf_xz_ray(jkmin_full(jc,jray)-1) = 0.  ;  mf_xz_ray(jkmax_full(jc,jray)+1) = 0.
-      mf_yz_ray(jkmin_full(jc,jray)-1) = 0.  ;  mf_yz_ray(jkmax_full(jc,jray)+1) = 0.
-      pmf_xz_ray(jkmin_full(jc,jray)-1) = 0. ;  pmf_xz_ray(jkmax_full(jc,jray)+1) = 0.
-      pmf_yz_ray(jkmin_full(jc,jray)-1) = 0. ;  pmf_yz_ray(jkmax_full(jc,jray)+1) = 0.
 
     ENDDO ! jray
 
@@ -3819,20 +3811,20 @@ SUBROUTINE wave2grid(nlev, i_startidx, i_endidx, jray_start, jray_end,          
   ! Finalize heat fluxes
   DO jk = 1, nlev
     DO jc = i_startidx, i_endidx
-      fact_grid(jc, jk) = fc(jc) * theta(jc, jk) * bvf2_full(jc, jk) / grav
+      fact_grid = fc(jc) * theta(jc, jk) * bvf2_full(jc, jk) / grav
       !
-      utflux(jc, jk) = utflux(jc, jk) * fact_grid(jc, jk)
-      vtflux(jc, jk) = vtflux(jc, jk) * fact_grid(jc, jk)
+      utflux(jc, jk) = utflux(jc, jk) * fact_grid
+      vtflux(jc, jk) = vtflux(jc, jk) * fact_grid
     ENDDO
   ENDDO
 
   ! Boundary conditions
   DO jc = i_startidx, i_endidx
     ! Boundaries to conserve momentum
-    uwflux  (jc,1) = 0._wp  ; uwflux  (jc,nlevp1) = 0._wp
-    vwflux  (jc,1) = 0._wp  ; vwflux  (jc,nlevp1) = 0._wp
-    uwpflux  (jc,1) = 0._wp ; uwpflux  (jc,nlevp1) = 0._wp
-    vwpflux  (jc,1) = 0._wp ; vwpflux  (jc,nlevp1) = 0._wp
+    uwflux  (jc, 1) = 0._wp ; uwflux  (jc, nlevp1) = 0._wp
+    vwflux  (jc, 1) = 0._wp ; vwflux  (jc, nlevp1) = 0._wp
+    uwpflux (jc, 1) = 0._wp ; uwpflux (jc, nlevp1) = 0._wp
+    vwpflux (jc, 1) = 0._wp ; vwpflux (jc, nlevp1) = 0._wp
   ENDDO ! jc
 
   ! Smooth pseudo-momentum fluxes / energy with a Shapiro filter
@@ -4212,7 +4204,6 @@ SUBROUTINE tendency(p_patch, p_metrics, p_int_state, rho, temp, theta, p_fld)
     DO jk = 1, nlev
       DO jc = i_startidx, i_endidx
 
-#ifndef __msgwam1d
         ! 1/rho, 1/(rho*dz)
         inv_rho   = 1._wp/rho(jc,jk,jb)
         inv_dzrho = 1._wp/(p_metrics%ddqz_z_full(jc,jk,jb)*rho(jc,jk,jb))
@@ -4227,33 +4218,51 @@ SUBROUTINE tendency(p_patch, p_metrics, p_int_state, rho, temp, theta, p_fld)
         ! Calculate u tendency at cell centers on full levels
         p_fld%mfcxz_mgm(jc,jk,jb) = -(  p_fld%uwfl_mgm(jc,jk,jb)  &
                                       - p_fld%uwfl_mgm(jc,jk+1,jb) ) * inv_dzrho
-        p_fld%ddt_u_gwd_mgm(jc,jk,jb)                 &
-                    = - ufldiv_hor(jc,jk,jb)*inv_rho  & ! hori flux conv.
-                      + p_fld%mfcxz_mgm(jc,jk,jb)     & ! vert flux conv.
-                      + p_fld%etx_mgm(jc,jk,jb)         ! elastic term
+#ifdef __msgwam1d
+        p_fld%ddt_u_gwd_mgm(jc,jk,jb) = + p_fld%mfcxz_mgm(jc,jk,jb) & ! vert flux conv.
+              + p_fld%etx_mgm(jc,jk,jb)                               ! elastic term
+#else
+        p_fld%ddt_u_gwd_mgm(jc,jk,jb) = + p_fld%mfcxz_mgm(jc,jk,jb) & ! vert flux conv.
+              - ufldiv_hor(jc,jk,jb)*inv_rho                        & ! hori flux conv.
+              + p_fld%etx_mgm(jc,jk,jb)                               ! elastic term
+#endif
 
         ! Calculate v tendency at cell centers on full levels
         p_fld%mfcyz_mgm(jc,jk,jb) = -(  p_fld%vwfl_mgm(jc,jk,jb)  &
                                       - p_fld%vwfl_mgm(jc,jk+1,jb) ) * inv_dzrho
-        p_fld%ddt_v_gwd_mgm(jc,jk,jb)                 &
-                    = - vfldiv_hor(jc,jk,jb)*inv_rho  & ! hori flux conv.
-                      + p_fld%mfcyz_mgm(jc,jk,jb)     & ! vert flux conv.
-                      + p_fld%ety_mgm(jc,jk,jb)         ! elastic term
+
+#ifdef __msgwam1d
+        p_fld%ddt_v_gwd_mgm(jc,jk,jb) = p_fld%mfcyz_mgm(jc,jk,jb) & ! vert flux conv.
+              + p_fld%ety_mgm(jc,jk,jb)                             ! elastic term
+#else
+        p_fld%ddt_v_gwd_mgm(jc,jk,jb) = p_fld%mfcyz_mgm(jc,jk,jb) & ! vert flux conv.
+              - vfldiv_hor(jc,jk,jb)*inv_rho                      & ! hori flux conv.
+              + p_fld%ety_mgm(jc,jk,jb)                             ! elastic term
+#endif
         
         ! Calculate u tendency for pmom fluxes at cell centers on full levels
         p_fld%pmfcxz_mgm(jc,jk,jb) = -(  p_fld%uwpfl_mgm(jc,jk,jb)  &
                                        - p_fld%uwpfl_mgm(jc,jk+1,jb) ) * inv_dzrho
-        p_fld%ddt_u_gwd_pmom_mgm(jc,jk,jb)                 &
-                    = - upfldiv_hor(jc,jk,jb)*inv_rho  & ! hori flux conv.
-                      + p_fld%pmfcxz_mgm(jc,jk,jb)       ! vert flux conv.
+
+#ifdef __msgwam1d
+        p_fld%ddt_u_gwd_pmom_mgm(jc,jk,jb) = p_fld%pmfcxz_mgm(jc,jk,jb)   ! vert flux conv.
+#else
+        p_fld%ddt_u_gwd_pmom_mgm(jc,jk,jb) = p_fld%pmfcxz_mgm(jc,jk,jb) & ! vert flux conv.
+              - upfldiv_hor(jc,jk,jb)*inv_rho                             ! hori flux conv.
+#endif
 
         ! Calculate v tendency at cell centers on full levels
         p_fld%pmfcyz_mgm(jc,jk,jb) = -(  p_fld%vwpfl_mgm(jc,jk,jb)  &
                                        - p_fld%vwpfl_mgm(jc,jk+1,jb) ) * inv_dzrho
-        p_fld%ddt_v_gwd_pmom_mgm(jc,jk,jb)                 &
-                    = - vpfldiv_hor(jc,jk,jb)*inv_rho  & ! hori flux conv.
-                      + p_fld%pmfcyz_mgm(jc,jk,jb)       ! vert flux conv.
 
+#ifdef __msgwam1d
+        p_fld%ddt_v_gwd_pmom_mgm(jc,jk,jb) = p_fld%pmfcyz_mgm(jc,jk,jb)   ! vert flux conv.
+#else
+        p_fld%ddt_v_gwd_pmom_mgm(jc,jk,jb) = p_fld%pmfcyz_mgm(jc,jk,jb) & ! vert flux conv.
+              - vpfldiv_hor(jc,jk,jb)*inv_rho                             ! hori flux conv.
+#endif
+
+#ifndef __msgwam1d
         ! Calculate pot temp tendency at cell centers on full levels
         ddt_theta_gwd_mgm = - ptfldiv_hor(jc,jk,jb)*inv_rho   ! hori flux conv.
 !!!!! TEST !!!!! TO BE CLEANED LATER
@@ -4263,12 +4272,7 @@ SUBROUTINE tendency(p_patch, p_metrics, p_int_state, rho, temp, theta, p_fld)
         p_fld%ddt_t_gwd_mgm(jc,jk,jb) = ddt_theta_gwd_mgm &
                     *temp(jc,jk,jb)/theta(jc,jk,jb)*gam  ! * pt_prog%exner(jc,jk,jb)*gam
 #else
-        ! 1-D mode
-        inv_dzrho = 1._wp/(p_metrics%ddqz_z_full(jc,jk,jb)*rho(jc,jk,jb))
-        p_fld%ddt_u_gwd_mgm(jc,jk,jb) = -(  p_fld%uwpfl_mgm(jc,jk,jb)  &
-                                          - p_fld%uwpfl_mgm(jc,jk+1,jb) ) * inv_dzrho
-        p_fld%ddt_v_gwd_mgm(jc,jk,jb) = -(  p_fld%vwpfl_mgm(jc,jk,jb)  &
-                                          - p_fld%vwpfl_mgm(jc,jk+1,jb) ) * inv_dzrho
+        p_fld%ddt_t_gwd_mgm(jc,jk,jb) = 0._wp
 #endif
 
       ENDDO ! jc
@@ -4286,10 +4290,8 @@ SUBROUTINE tendency(p_patch, p_metrics, p_int_state, rho, temp, theta, p_fld)
         &              p_fld%ddt_u_gwd_pmom_mgm(:,1:nlevsmootht+1,jb))
       CALL smooth_vert(nlevsmootht,i_startidx,i_endidx,nsmooth,.FALSE.,  &
         &              p_fld%ddt_v_gwd_pmom_mgm(:,1:nlevsmootht+1,jb))
-#ifndef __msgwam1d
       CALL smooth_vert(nlevsmootht,i_startidx,i_endidx,nsmooth,.FALSE.,  &
         &              p_fld%ddt_t_gwd_mgm(:,1:nlevsmootht+1,jb))
-#endif
     ENDIF
 
   ENDDO ! jb
@@ -4324,11 +4326,20 @@ SUBROUTINE heuristic_check_3d(p_patch, array, array_name)
   REAL(wp), INTENT(IN)  :: array(:, :, :)
   CHARACTER(len=*), INTENT(IN) :: array_name
   
-  INTEGER :: jc, jk, jb
-  INTEGER :: i_startblk, i_endblk
-  INTEGER :: i_startidx, i_endidx
-  INTEGER :: rl_start, rl_end
-  INTEGER :: nlev
+  INTEGER :: jc, jk, jb             ! loop indices
+  INTEGER :: i_startblk, i_endblk   ! block loop boundaries
+  INTEGER :: i_startidx, i_endidx   ! cell loop boundaries
+  INTEGER :: rl_start, rl_end       !
+  INTEGER :: nlev                   ! number of vetical levels
+
+  !----------------------------------------------------------------------
+  ! Purpose:
+  !         Check 3D array associated to p_patch for NaNs using
+  !         IEEE arithmetics
+  !
+  ! Method:
+  !         loop over all members and return message if NaN is found
+  !----------------------------------------------------------------------
 
   nlev = p_patch%nlev
   
@@ -4338,18 +4349,18 @@ SUBROUTINE heuristic_check_3d(p_patch, array, array_name)
   i_startblk = p_patch%cells%start_block(rl_start)
   i_endblk   = p_patch%cells%end_block(rl_end)
 
-  DO jb = i_startblk, i_endblk
+  DO jb = i_startblk, i_endblk  ! block loop (jb)
   
     CALL get_indices_c(p_patch, jb, i_startblk, i_endblk, &
       & i_startidx, i_endidx, rl_start, rl_end)
 
-    DO jk = 1, nlev
-      DO jc = i_startidx, i_endidx
+    DO jk = 1, nlev  ! vertical level loop (jk)
+      DO jc = i_startidx, i_endidx  ! cell loop  (jc)
 
         IF (IEEE_IS_NAN(array(jc, jk, jb))) THEN
           WRITE(message_text, '(3a,3i5)') &
             & 'Found IEEE NaN in array ', TRIM(array_name), ' at indices (jc, jk, jb): ', jc, jk, jb
-          CALL message('heuristic_check_3d', TRIM(message_text))
+          CALL finish('heuristic_check_3d', TRIM(message_text))
         ENDIF ! IEEE NaN check
       ENDDO ! jc
     ENDDO ! jk

@@ -268,8 +268,8 @@ SUBROUTINE project_diagnostics(nlev, i_startidx, i_endidx, jray_start, jray_end,
                 omega = SQRT(omega2)
 
                 ! calculate the corresponding local intrinsic group velocities
-                cgr = - branch * mray(jc, jray) / (SQRT(omega2) * K2_p_gam2) * (omega2 - fc2(jc))
-                cgr_mod = cgr * omega2 / (omega2 + fc2(jc))
+                cgr = - branch * mray(jc, jray) / (omega * K2_p_gam2) * (omega2 - fc2(jc))
+                cgr_mod = cgr * omega2 / (omega2 - fc2(jc))
 
                 ! get partial height of ray volume in layer
                 dzi_o_dz = (MIN(zray_u, z(jc, jk-1)) - MAX(zray_d_eff, z(jc, jk)))  / (z(jc, jk-1) - z(jc, jk))
