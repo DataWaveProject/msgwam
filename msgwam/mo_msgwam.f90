@@ -738,10 +738,10 @@ SUBROUTINE gwdrag_msgwam ( dt_call,                   & ! input
                                u              = u(:, :, jb),                      & ! zonal wind (full levels)      (in)
                                v              = v(:, :, jb),                      & ! meridional wind (full levels) (in)
                                theta          = theta(:,:,jb),                    & ! potential temperature    (in)
-                               pmflux_e       = p_fld% mfl_mgm_e   (:,:,jb),      & ! pseudo mometum flux E-ward      (out)
-                               pmflux_w       = p_fld% mfl_mgm_w   (:,:,jb),      & ! pseudo mometum flux W-ward      (out)
-                               pmflux_s       = p_fld% mfl_mgm_s   (:,:,jb),      & ! pseudo mometum flux S-ward      (out)
-                               pmflux_n       = p_fld% mfl_mgm_n   (:,:,jb),      & ! pseudo mometum flux N-ward      (out)
+                               pmflux_e       = p_fld% pmfl_mgm_e   (:,:,jb),      & ! pseudo mometum flux E-ward      (out)
+                               pmflux_w       = p_fld% pmfl_mgm_w   (:,:,jb),      & ! pseudo mometum flux W-ward      (out)
+                               pmflux_s       = p_fld% pmfl_mgm_s   (:,:,jb),      & ! pseudo mometum flux S-ward      (out)
+                               pmflux_n       = p_fld% pmfl_mgm_n   (:,:,jb),      & ! pseudo mometum flux N-ward      (out)
                                apmflux        = p_fld% apmfl_mgm   (:,:,jb),      & ! absolute p-momentum flux (out)
                                mflux_e        = p_fld% mfl_mgm_e   (:,:,jb),      & ! mometum flux E-ward      (out)
                                mflux_w        = p_fld% mfl_mgm_w   (:,:,jb),      & ! mometum flux W-ward      (out)
@@ -1025,7 +1025,7 @@ SUBROUTINE gwdrag_msgwam ( dt_call,                   & ! input
                                                      p_fld% action_mgm_5 )
       !
       CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlevp1,p_fld%apmfl_mgm)
-      CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,  p_fld%amfl_mgm)
+      CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlevp1,p_fld%amfl_mgm)
       CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,  p_fld%aptfl_mgm)
       CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,  p_fld%energy_mgm)
       CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,  p_fld%energy_p_mgm)
@@ -1049,14 +1049,14 @@ SUBROUTINE gwdrag_msgwam ( dt_call,                   & ! input
           &                                            p_fld% ptfl_mgm_n , &
           &                                            p_fld% ptfl_mgm_s )
         !
-        CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,p_fld%mfl_mgm_e)
-        CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,p_fld%mfl_mgm_w)
-        CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,p_fld%mfl_mgm_n)
-        CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,p_fld%mfl_mgm_s)
-        CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,p_fld%pmfl_mgm_e)
-        CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,p_fld%pmfl_mgm_w)
-        CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,p_fld%pmfl_mgm_n)
-        CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,p_fld%pmfl_mgm_s)
+        CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlevp1,p_fld%mfl_mgm_e)
+        CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlevp1,p_fld%mfl_mgm_w)
+        CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlevp1,p_fld%mfl_mgm_n)
+        CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlevp1,p_fld%mfl_mgm_s)
+        CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlevp1,p_fld%pmfl_mgm_e)
+        CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlevp1,p_fld%pmfl_mgm_w)
+        CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlevp1,p_fld%pmfl_mgm_n)
+        CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlevp1,p_fld%pmfl_mgm_s)
         CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,p_fld%ptfl_mgm_e)
         CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,p_fld%ptfl_mgm_w)
         CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,p_fld%ptfl_mgm_n)
@@ -5256,8 +5256,14 @@ endif
 #endif
       dzray(jc,jray)   = ABS(dzray(jc,jray))
 
-      ! TODO: introduce splitting routine instead the solution below
-      ! Limit the vertical size by dzraymin and dzraymax 
+      ! The lower bounds, darcraymin and dzraymin, are introduced for a numerical
+      ! reason to avoid zero (or numerically too small) extents which can potentially
+      ! induce numerical problems in further calculations. Those bounds should
+      ! therefore be very small enough to tolerate as errors.
+      ! The upper bounds are applied, for a safe side, considering unphysically
+      ! abrupt, large expansion of an extent in ONE time step (e.g, to ~10x grid length).
+      ! Although physically this may not occur (or only very rarely), we should
+      ! guarantee it in a numerical reason, by explicitly applying some bounds.  
       ! (defined in the namelist)
 #ifndef __msgwam1d
       dlonray(jc,jray) = MAX(darcraymin, MIN(darcraymax, dlonray(jc,jray)))
@@ -7732,7 +7738,7 @@ FUNCTION inside_triangle_torus(v, v1,v2,v3)
     IF (a >= 0._wp .AND. b >= 0._wp .AND. a + b < 1._wp) THEN
       inside_triangle_torus = 1
     ELSE
-      inside_triangle_torus = 0
+      inside_triangle_torus = -1
     ENDIF
 
 END FUNCTION inside_triangle_torus
