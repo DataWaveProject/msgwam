@@ -6087,7 +6087,7 @@ SUBROUTINE collect_vol( p_ray, p_patch, z_ifc, z_mc, z_mc_n, jray, jc, jb, jc_n,
   INTEGER , POINTER :: jkr
   INTEGER , TARGET  :: jk0
   INTEGER , TARGET  :: jk_ul(2)
-  INTEGER           :: jkmp1
+  INTEGER           :: jk0m1
   INTEGER           :: jk
   INTEGER           :: ivol
   REAL(wp)          :: z_ul(2)
