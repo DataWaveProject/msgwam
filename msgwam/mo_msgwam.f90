@@ -5886,7 +5886,7 @@ END IF
           IF ( p_spl% mode(jc_n,jray,jb_n) == imode_nosplit ) THEN   ! not split horizontally
             !
             IF (p_spl% jcol(1,jc_n,jray,jb_n) == c_nb(jc,jb)% jcol_c(1)) THEN
-              CALL collect_vol( p_ray, p_patch, z_mc(:,:,jb), z_ifc(:,:,jb), z_ifc(:,:,jb_n),  &
+              CALL collect_vol( p_ray, p_patch, z_ifc(:,:,jb), z_mc(:,:,jb), z_mc(:,:,jb_n),  &
                 &               jray, jc,jb, jc_n,jb_n, jr_coll, 0, p_spl )
               p_spl% mode(jc_n,jray,jb_n) = imode_skip   ! to skip from other grid-columns
             END IF
@@ -5894,7 +5894,7 @@ END IF
           ELSE   ! split in either X or Y   # spl_jcol(1) /= spl_jcol(2)
             !
             IF (p_spl% jcol(1,jc_n,jray,jb_n) == c_nb(jc,jb)% jcol_c(1)) THEN
-              CALL collect_vol( p_ray, p_patch, z_mc(:,:,jb), z_ifc(:,:,jb), z_ifc(:,:,jb_n),  &
+              CALL collect_vol( p_ray, p_patch, z_ifc(:,:,jb), z_mc(:,:,jb), z_mc(:,:,jb_n),  &
                 &               jray, jc,jb, jc_n,jb_n, jr_coll,                               &
                 &               p_spl% mode(jc_n,jray,jb_n), p_spl )
                                        ! passing imode_x or imode_y
@@ -5904,7 +5904,7 @@ END IF
                 p_spl% mode(jc_n,jray,jb_n) = imode_skip
               END IF
             ELSE IF (p_spl% jcol(2,jc_n,jray,jb_n) == c_nb(jc,jb)% jcol_c(1)) THEN
-              CALL collect_vol( p_ray, p_patch, z_mc(:,:,jb), z_ifc(:,:,jb), z_ifc(:,:,jb_n),  &
+              CALL collect_vol( p_ray, p_patch, z_ifc(:,:,jb), z_mc(:,:,jb), z_mc(:,:,jb_n),  &
                 &               jray, jc,jb, jc_n,jb_n, jr_coll,                               &
                 &               p_spl% mode(jc_n,jray,jb_n) + 1, p_spl )
                                        ! passing (imode_x or imode_y) + 1
@@ -6069,14 +6069,14 @@ END IF
 
 END SUBROUTINE split_merge_volume
 
-SUBROUTINE collect_vol( p_ray, p_patch, z_mc, z_ifc, z_ifc_n, jray, jc, jb, jc_n, jb_n, i,  &
+SUBROUTINE collect_vol( p_ray, p_patch, z_ifc, z_mc, z_mc_n, jray, jc, jb, jc_n, jb_n, i,  &
   &                     iloc, p_spl )
 
   TYPE(t_ray),            INTENT(IN   ) :: p_ray
   TYPE(t_patch),   TARGET,INTENT(IN   ) :: p_patch
-  REAL(wp),               INTENT(IN   ) :: z_mc(:,:)
   REAL(wp),               INTENT(IN   ) :: z_ifc(:,:)
-  REAL(wp),               INTENT(IN   ) :: z_ifc_n(:,:)
+  REAL(wp),               INTENT(IN   ) :: z_mc(:,:)
+  REAL(wp),               INTENT(IN   ) :: z_mc_n(:,:)
   INTEGER ,               INTENT(IN   ) :: jray
   INTEGER ,               INTENT(IN   ) :: jc, jb
   INTEGER ,               INTENT(IN   ) :: jc_n, jb_n
@@ -6087,7 +6087,7 @@ SUBROUTINE collect_vol( p_ray, p_patch, z_mc, z_ifc, z_ifc_n, jray, jc, jb, jc_n
   INTEGER , POINTER :: jkr
   INTEGER , TARGET  :: jk0
   INTEGER , TARGET  :: jk_ul(2)
-  INTEGER           :: jk0p1
+  INTEGER           :: jkmp1
   INTEGER           :: jk
   INTEGER           :: ivol
   REAL(wp)          :: z_ul(2)
@@ -6109,14 +6109,19 @@ SUBROUTINE collect_vol( p_ray, p_patch, z_mc, z_ifc, z_ifc_n, jray, jc, jb, jc_n
   ! It is assumed that 'iexist' has already been updated correctly after
   ! the propagation calculation, if the base grid column is unchanged.
   jk0 = p_ray% iexist(jc_n,jray,jb_n)
-  jk0p1 = MIN(p_patch% nlevp1, jk0+1)
+  jk0m1 = MAX(1, jk0 - 1)
 
   ! If the vertical grids are different between the grid columns, update jk0.
   ! jk0 must satisfy both of the following conditions:
   !   #  z_mc(jc,jk0) <= zray                   if  jk0 < nlevp1
   !   #                  zray < z_mc(jc,jk0-1)  if  jk0 > 1
 
-  IF ( z_ifc_n(jc_n, jk0p1) /= z_ifc(jc, jk0p1) ) THEN
+  ! To gaurantee that the index does not change, both levels above and below the ray
+  ! volume must be consistent between the neighbor cells (identical altitudes at the
+  ! lower-level coordinate does not always guarantee the identity at the upper level,
+  ! for ICON's vertical coordinate system).
+
+  IF ( z_mc_n(jc_n,jk0) /= z_mc(jc,jk0) .OR. z_mc_n(jc_n,jk0m1) /= z_mc(jc,jk0m1) ) THEN
     !
     ! Some conditions used at the end of the integration (in propagate_wave) need
     ! to be applied again here, as the vertical grids are changed.
@@ -6171,7 +6176,7 @@ SUBROUTINE collect_vol( p_ray, p_patch, z_mc, z_ifc, z_ifc_n, jray, jc, jb, jc_n
     ENDDO
     jk_ul(2) = p_patch% nlev   ! nlevp1 - 1
     DO jl = jk0, p_patch% nlev-1
-      IF (z_mc(jc,jl) < z_ul(2)) THEN
+      IF (z_mc(jc,jl) <= z_ul(2)) THEN
         jk_ul(2) = jl
         EXIT
       ENDIF
@@ -6972,7 +6977,7 @@ SUBROUTINE regrid_wave( p_patch,        & !in(out)
   INTEGER  :: jb, jc, jstencil
   INTEGER  :: jr, jray_loc, jray_nb, jray_loc_old
   INTEGER  :: icn, ibn
-  INTEGER  :: jk0, jk0p1
+  INTEGER  :: jk0, jk0m1
 
   REAL(wp) :: ray_xyz(3)
 
@@ -7048,9 +7053,9 @@ SUBROUTINE regrid_wave( p_patch,        & !in(out)
             IF (intriangle >= 0) THEN
 
               jk0 = p_ray%iexist(icn,jray_nb,ibn)
-              jk0p1 = MIN(p_patch% nlevp1, jk0+1)
+              jk0m1 = MAX(1, jk0 - 1)
 
-              IF ( z_ifc(icn, jk0p1, ibn) /= z_ifc(jc, jk0p1, jb) ) THEN
+              IF ( z_mc(icn,jk0,ibn) /= z_mc(jc,jk0,jb) .OR. z_mc(icn,jk0m1,ibn) /= z_mc(jc,jk0m1,jb) ) THEN
                 !
                 ! Some conditions used at the end of the integration (in propagate_wave) need
                 ! to be applied again here, as the vertical grids are changed.
@@ -7283,9 +7288,9 @@ SUBROUTINE regrid_wave( p_patch,        & !in(out)
             IF (intriangle >= 0) THEN
 
               jk0 = p_ray%iexist(icn,jray_nb,ibn)
-              jk0p1 = MIN(p_patch% nlevp1, jk0+1)
+              jk0m1 = MAX(1, jk0 - 1)
 
-              IF ( z_ifc(icn, jk0p1, ibn) /= z_ifc(jc, jk0p1, jb) ) THEN
+              IF ( z_mc(icn,jk0,ibn) /= z_mc(jc,jk0,jb) .OR. z_mc(icn,jk0m1,ibn) /= z_mc(jc,jk0m1,jb) ) THEN
                 !
                 ! Some conditions used at the end of the integration (in propagate_wave) need
                 ! to be applied again here, as the vertical grids are changed.
