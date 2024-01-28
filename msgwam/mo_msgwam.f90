@@ -5393,7 +5393,8 @@ endif
         ! then delete the ray volume.
         IF ( zray(jc,jray) - 0.5_wp*dzray(jc,jray) > zhalf(jc,jk_active(jc,jray)) ) THEN
           specid(jc,jray) = 0
-        ELSE IF (mray(jc,jray) > 0._wp) THEN
+        ELSE IF ( mray(jc,jray) > 0._wp .OR.   &
+          &       zray(jc,jray) + 0.5_wp*dzray(jc,jray) < zhalf(jc,jk_active(jc,jray)) ) THEN   ! comment on specid to be added
           iexist(jc,jray) = 0
           specid(jc,jray) = 0
           dens  (jc,jray) = 0.
