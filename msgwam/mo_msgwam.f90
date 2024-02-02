@@ -1018,22 +1018,12 @@ SUBROUTINE gwdrag_msgwam ( dt_call,                   & ! input
         &                                            p_fld% aptfl_mgm    , &
         &                                            p_fld% energy_mgm   , &
         &                                            p_fld% energy_p_mgm )
-      CALL sync_patch_array_mult(SYNC_C, p_patch, 5, p_fld% action_mgm_1 , &
-                                                     p_fld% action_mgm_2 , &
-                                                     p_fld% action_mgm_3 , &
-                                                     p_fld% action_mgm_4 , &
-                                                     p_fld% action_mgm_5 )
       !
       CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlevp1,p_fld%apmfl_mgm)
       CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlevp1,p_fld%amfl_mgm)
       CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,  p_fld%aptfl_mgm)
       CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,  p_fld%energy_mgm)
       CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,  p_fld%energy_p_mgm)
-      CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,  p_fld%action_mgm_1)
-      CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,  p_fld%action_mgm_2)
-      CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,  p_fld%action_mgm_3)
-      CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,  p_fld%action_mgm_4)
-      CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev,  p_fld%action_mgm_5)
 
       IF ( lcalc_flux_4dir_bg(jg) ) THEN
         CALL sync_patch_array_mult(SYNC_C, p_patch, 4, p_fld% mfl_mgm_e  , &
@@ -1217,13 +1207,6 @@ SUBROUTINE gwdrag_msgwam ( dt_call,                   & ! input
     !IF (timers_level > 4) CALL timer_stop(timer_msgwam_regrid_wave)
   END IF
 #endif
-
-  CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev, p_fld%action_mgm_1)
-  CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev, p_fld%action_mgm_2)
-  CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev, p_fld%action_mgm_3)
-  CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev, p_fld%action_mgm_4)
-  CALL smooth_hori(p_patch,p_gridinfo4ray(jg),p_int_state,nlev, p_fld%action_mgm_5)
-
 
   !======================== TENDENCY LIMITER ============================
   ! Tendency limiter to stabilize high-top runs. This limiter is taken 
