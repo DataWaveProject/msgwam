@@ -226,7 +226,7 @@ SUBROUTINE project_diagnostics(nlev, i_startidx, i_endidx, jray_start, jray_end,
                 cgr = - branch * mray(jc, jray) / (SQRT(omega2) * K2_p_gam2) * (omega2 - fc2(jc))
 
                 ! get partial height of ray volume in layer
-                dzi_o_dz = (MIN(zray_u, z(jc, jk-1)) - MAX(zray_d_eff, z(jc, jk)))  / (z(jc, jk-1) - z(jc, jk))
+                dzi_o_dz = (MIN(zray_u, zhalf(jc, jk)) - MAX(zray_d_eff, zhalf(jc, jk+1))) / (zhalf(jc, jk) - zhalf(jc, jk+1))
 
                 ! calculate partial wave action associated to the vertical layer
                 a_ray_jk = ABS(dzi_o_dz * a_ray)

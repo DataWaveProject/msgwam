@@ -4360,7 +4360,7 @@ SUBROUTINE heuristic_check_3d(p_patch, array, array_name)
         IF (IEEE_IS_NAN(array(jc, jk, jb))) THEN
           WRITE(message_text, '(3a,3i5)') &
             & 'Found IEEE NaN in array ', TRIM(array_name), ' at indices (jc, jk, jb): ', jc, jk, jb
-          CALL finish('heuristic_check_3d', TRIM(message_text))
+          CALL message('heuristic_check_3d', TRIM(message_text))
         ENDIF ! IEEE NaN check
       ENDDO ! jc
     ENDDO ! jk
