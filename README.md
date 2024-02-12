@@ -10,11 +10,13 @@ This is the submodule for [ICON-NWP (fork)](https://gitlab.dkrz.de/atmodynamics-
 - [Kim et al. 2023](http://arxiv.org/abs/2309.15301)
 - [Voelker et al. 2023](http://arxiv.org/abs/2309.11257)
 
+Note that this submodule needs to be inserted into ICON and linked in various places if the [ICON](https://gitlab.dkrz.de/icon/icon-model) code. For more details please contact us as indicated below.
+
 ## Support
-If you encounter a problem when using MS-GWaM please make use of the issue tracker. Some additional information and example usage scripts can be found in the [supplementary repository](https://gitlab.dkrz.de/atmodynamics-goethe-universitaet-frankfurt/icon-nwp-supplementary).
+If you encounter a problem when using MS-GWaM please make use of the issue tracker. You may also contact [G. S. Voelker](https://github.com/g-voelker), [Y.-H. Kim](https://github.com/kyha0830), or [Ulrich Achatz](https://www.uni-frankfurt.de/43754014/Ulrich-Achatz) for more information.
 
 ## License
 This project is licensed under the [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) license.
 
 ## Project status
-MS-GWaM is under constant development with ín the work group of Ulrich Achatz.
+MS-GWaM is under constant development with ín the [work group of Ulrich Achatz](https://www.uni-frankfurt.de/43267416/AG_Theorie).
